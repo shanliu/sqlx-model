@@ -1,0 +1,15 @@
+[package]
+name = "sqlx-model-macros"
+version = "0.0.1-beta.4"
+authors = ["liushan <shan.liu@msn.com>"]
+edition = "2021"
+license-file = "../LICENSE"
+description="sqlx model macro"
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = {version = "~1.0.74",features = ["full"]}
+quote = "~1.0.9"
+proc-macro2 = "~1.0.28"
+heck ="0.3.1"

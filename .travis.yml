@@ -1,0 +1,19 @@
+language: rust
+services:
+  - mysql
+rust:
+  - stable
+  - beta
+  - nightly
+jobs:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+  
+before_install:
+  - sudo mysql -e "use mysql; update user set authentication_string=PASSWORD('') where User='root'; update user set plugin='mysql_native_password';FLUSH PRIVILEGES;"
+  - sudo mysql -e "create database test;use test;CREATE TABLE `yaf_users` (`id` int(11) unsigned NOT NULL AUTO_INCREMENT,`nickname` varchar(32) DEFAULT NULL,`gender` tinyint(3) unsigned NOT NULL DEFAULT 0,`headimg` varchar(64) DEFAULT NULL,`password_id` int(10) unsigned NOT NULL DEFAULT 0,`add_time` int(10) unsigned NOT NULL COMMENT,PRIMARY KEY (`id`)) ENGINE=InnoDB;"
+  - sudo service mysql restart
+  
+script: 
+  - cargo test --verbose

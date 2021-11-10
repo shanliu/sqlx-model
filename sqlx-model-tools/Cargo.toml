@@ -1,0 +1,22 @@
+[package]
+name = "sqlx-model-tools"
+version = "0.0.1-beta.4"
+authors = ["liushan <shan.liu@msn.com>"]
+edition = "2021"
+license-file = "../LICENSE"
+description="sqlx model cli tools"
+
+[dependencies]
+sqlx-model = { version = "~0.0.1-beta.13", path = "../"}
+sqlx = {version = "~0.5"}
+tokio = {version = "1.*",features = [ "full"],optional = true}
+
+
+[features]
+default=[
+    "tokio",
+    "sqlx/runtime-tokio-native-tls",
+    "sqlx-model/sqlx-mysql",
+    "sqlx-model/sqlx-sqlite",
+    "sqlx-model/sqlx-postgres",
+]

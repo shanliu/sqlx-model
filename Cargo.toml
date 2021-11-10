@@ -1,0 +1,31 @@
+[workspace]
+members = [".", "sqlx-model-macros","sqlx-model-tools"]
+
+[package]
+name = "sqlx-model"
+version = "0.0.1-beta.14"
+authors = ["liushan <shan.liu@msn.com>"]
+edition = "2021"
+license-file = "LICENSE"
+description="sqlx model"
+keywords = ["database", "async","orm","model","sqlformat"]
+categories = ["database", "asynchronous"]
+repository = "https://github.com/shanliu/sqlx-model"
+[dependencies]
+sqlx-model-macros = { version = "0.0.1-beta.4", path = "./sqlx-model-macros"}
+sqlx = {version = "~0.5"}
+tokio = {version = "1.*",features = [ "full"],optional = true}
+
+
+[features]
+default=[
+    "tokio",
+    "sqlx/runtime-tokio-native-tls",
+    "sqlx-mysql",
+    "sqlx-sqlite",
+    "sqlx-postgres"
+]
+sqlx-mysql = ["sqlx/mysql"]
+sqlx-sqlite = ["sqlx/sqlite"]
+sqlx-postgres = ["sqlx/postgres"]
+sqlx-mssql = ["sqlx/mssql"]
