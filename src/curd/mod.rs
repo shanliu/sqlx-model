@@ -75,7 +75,7 @@ impl DbType{
             return DbType::Postgres;
         }
         #[cfg(feature = "sqlx-mssql")]
-        if TypeId::of::<DB>() == TypeId::of::<sqlx::MsSql>() {
+        if TypeId::of::<DB>() == TypeId::of::<sqlx::Mssql>() {
             return DbType::MsSql;
         }
         unimplemented!()

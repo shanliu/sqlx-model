@@ -217,4 +217,4 @@ update_execute_by!(sqlx::Sqlite);
 update_execute_by!(sqlx::Postgres);
 
 #[cfg(feature = "sqlx-mssql")]
-update_execute_by!(sqlx::MsSql);
+update_execute_by!(sqlx::Mssql);

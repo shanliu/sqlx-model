@@ -126,7 +126,5 @@ delete_execute_by!(sqlx::Sqlite);
 #[cfg(feature = "sqlx-postgres")]
 delete_execute_by!(sqlx::Postgres);
 
-
-
 #[cfg(feature = "sqlx-mssql")]
-delete_execute_by!(sqlx::MsSql);
+delete_execute_by!(sqlx::Mssql);

@@ -1,9 +1,9 @@
 [workspace]
-members = [".", "sqlx-model-macros","sqlx-model-tools"]
+members = [".", "sqlx-model-macros"]
 
 [package]
 name = "sqlx-model"
-version = "0.0.1-beta.14"
+version = "0.0.1-beta.15"
 authors = ["liushan <shan.liu@msn.com>"]
 edition = "2021"
 license-file = "LICENSE"
@@ -23,7 +23,8 @@ default=[
     "sqlx/runtime-tokio-native-tls",
     "sqlx-mysql",
     "sqlx-sqlite",
-    "sqlx-postgres"
+    "sqlx-postgres",
+    "sqlx-mssql"
 ]
 sqlx-mysql = ["sqlx/mysql"]
 sqlx-sqlite = ["sqlx/sqlite"]
