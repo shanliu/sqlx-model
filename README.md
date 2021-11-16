@@ -31,6 +31,8 @@ async-std={version = "1.10.0", features = [ "attributes" ]}
 > 使用 sqlx_model::SqlxModel 宏 自动增加辅助方法
 > 同时会创建 UserModelRef 的结构，用于辅助增删改查操作
 
+> 可以通过 `https://github.com/shanliu/db-to-code` 生成以下文件，具体生成方式参考 db-to-code 说明
+
 ```rust
 #[derive(sqlx::FromRow,sqlx_model::SqlxModel,Clone,Debug)]
 //#[sqlx(rename_all="lowercase")] //按规则自定义字段名
