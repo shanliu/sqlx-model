@@ -219,3 +219,55 @@ pub fn derive_model(item: TokenStream) -> TokenStream {
     };
     expanded.into()
 }
+
+
+
+
+
+#[proc_macro_derive(SqlxModelStatus, attributes(sqlx_model_status))]
+// model 自动填充方法
+pub fn derive_model_status(item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as DeriveInput);
+    let struct_name = &input.ident;
+    let mut field_type="i32".to_owned();
+    for attr in input.attrs.iter().filter(|e|{
+        e.path.is_ident("sqlx_model_status")
+    })
+    {
+        let meta = attr
+            .parse_meta()
+            .map_err(|e| syn::Error::new_spanned(attr, e))
+            .unwrap();
+        match meta {
+            Meta::List(list) => {
+                for cattr in list.nested.iter(){
+                    match cattr {
+                        NestedMeta::Meta(Meta::NameValue(ref attr_ident)) =>{
+                            let name=attr_ident.clone();
+                            let name=name.path.get_ident().unwrap().to_string();
+                            let name=name.as_str();
+                            let ident=attr_ident.clone();
+                            match name {
+                                "type"=>{
+                                    field_type= match ident.lit {
+                                        syn::Lit::Str(val)=>val,
+                                        _=>unreachable!("table name must be string"),
+                                    }.value();
+                                },
+                                _=>{}
+                            }
+                        }
+                        _ => {},
+                    }
+                }
+
+            }
+            _ => {}
+        }
+    }
+    let field_type=quote::format_ident!("{}",field_type);
+    quote! {
+        sqlx_model::model_enum_status_define!(#struct_name,#field_type);
+    }.into()
+}
+

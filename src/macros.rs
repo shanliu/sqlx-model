@@ -360,3 +360,37 @@ fn test_model_option_macro(){
     });
 
 }
+
+#[macro_export]
+/// 对状态类型的结构提供辅助方法
+/// @param $type 状态的类型
+macro_rules! model_enum_status_define {
+    ($self_var:ident,$struct_name:ident,$type:ty)=>{
+        impl $struct_name{
+            pub fn eq(self,eq:$type)->bool{
+                return self.to()==eq;
+            }
+            pub fn to(self)->$type{
+                return self as $type
+            }
+        }
+    };
+    ($struct_name:ident,$type:ty)=>{
+        $crate::model_enum_status_define!(self ,$struct_name,$type);
+    };
+}
+
+
+
+
+#[test]
+fn test_model_enum_status(){
+    enum UserModelStatus {
+        Statu1=1,
+        Statu2=2,
+    }
+    crate::model_enum_status_define!(UserModelStatus,u8);
+    assert_eq!(UserModelStatus::Statu1.eq(1),true);
+    assert_eq!(UserModelStatus::Statu1.eq(2),false);
+    assert_eq!(UserModelStatus::Statu2.eq(2),true);
+}
