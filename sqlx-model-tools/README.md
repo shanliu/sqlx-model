@@ -2,7 +2,7 @@
 <h3>根据数据库中表结构生成文档或代码的工具</h3>
 </div>
 <div align="center">
-  <a href="https://github.com/shanliu/sqlx-model/sqlx-model-tools">
+  <a href="https://github.com/shanliu/sqlx-model/edit/main/sqlx-model-tools/">
     <img src="https://img.shields.io/crates/v/sqlx-model-tools.svg?style=flat-square"
     alt="Crates.io version" />
   </a>
