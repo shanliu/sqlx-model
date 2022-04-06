@@ -1,7 +1,7 @@
 use proc_macro::{TokenStream};
 use quote::{quote};
 use syn::{Attribute, Data, DataStruct, DeriveInput, Fields, Meta, NestedMeta, parse_macro_input};
-use heck::{CamelCase, KebabCase, MixedCase, ShoutySnakeCase, SnakeCase};
+use heck::{ToLowerCamelCase,ToUpperCamelCase, ToKebabCase, ToShoutySnakeCase, ToSnakeCase,ToPascalCase};
 
 
 fn get_sqlx_field_rename(attrs:&Vec<Attribute>)->Option<String>{
@@ -58,10 +58,13 @@ fn change_sqlx_field_rename(change_type:&Option<String>,field_name:String)->Stri
                 return  field_name.to_kebab_case();
             },
             "camelCase" =>{
-                return field_name.to_mixed_case();
+                return field_name.to_lower_camel_case();
+            },
+            "UpperCamelCase" =>{
+                return field_name.to_upper_camel_case();
             },
             "PascalCase" =>{
-                return field_name.to_camel_case();
+                return field_name.to_pascal_case();
             },
             _ =>{},
         }

@@ -1,0 +1,34 @@
+[package]
+name = "sqlx-model-tools"
+version = "0.1.0-bate.1"
+authors = ["liushan <shan.liu@msn.com>"]
+edition = "2021"
+license-file = "../LICENSE"
+description="sqlx model cli tools"
+keywords = ["database", "tools","orm","model"]
+categories = ["database"]
+repository = "https://github.com/shanliu/sqlx-model/sqlx-model-tools"
+
+[dependencies]
+config = "0.12.0"
+sqlx = {version = "~0.5"}
+tokio = {version = "1.*",features = [ "full"],optional = true}
+tinytemplate = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.69"
+heck ="0.4.0"
+regex = "1.5.4"
+async-trait = "0.1.51"
+
+[features]
+default=[
+    "tokio",
+    "sqlx/runtime-tokio-native-tls",
+    "sqlx-mysql",
+]
+sqlx-mysql = ["sqlx/mysql"]
+
+[[bin]]
+path = "src/main.rs"
+doc = false
+name = "db-to-code"
