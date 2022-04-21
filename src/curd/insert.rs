@@ -1,6 +1,6 @@
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
-use sqlx::{Database, Error, Pool};
+use sqlx::{Database, Error};
 use std::vec;
 use super::{DbType, FieldItem, ModelTableField, ModelTableName,TableFields,ModelUpdateData,Update,UpdateData};
 use sqlx::{Arguments, Executor, IntoArguments};
@@ -133,11 +133,11 @@ where
         }
         res
     }
-    pub async fn execute<'c>(self,pool:&'c Pool<DB>) -> Result<<DB as Database>::QueryResult, Error> 
+    pub async fn execute<'c,E>(self,executor:E,) -> Result<<DB as Database>::QueryResult, Error> 
     where
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB>
+        E: Executor<'c, Database = DB>
      {
         let table = T::table_name();
         let vals = self.sql_param();
@@ -149,20 +149,20 @@ where
         );
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
-        res.execute(pool).await
+        executor.execute(res).await
     }
     #[cfg(feature = "sqlx-mysql")]
-    pub async fn execute_update<'c,'t, CT, IT>(
+    pub async fn execute_update<'c,'t, CT, IT,E>(
         self,
         update: Update<'t,DB, IT, CT>,
-        pool:&'c Pool<DB>
+        executor:E,
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
         IT: ModelUpdateData<'t,DB, CT>,
         CT: UpdateData<'t,DB>,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB>
+        E: Executor<'c, Database = DB>,
     {
         let table = T::table_name();
         let vals = self.sql_param();
@@ -176,7 +176,7 @@ where
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
         res = update.bind_values(res);
-        res.execute(pool).await
+        executor.execute(res).await
     }
     execute_by_sql!(Insert<DB,T,DT>);
 }

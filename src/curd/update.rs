@@ -1,6 +1,6 @@
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
-use sqlx::{Database, Error, Pool};
+use sqlx::{Database, Error};
 use super::{DbType, FieldItem, ModelTableField, ModelTableName};
 use sqlx::{Arguments, Executor, IntoArguments};
 
@@ -86,11 +86,11 @@ where
     ) -> Query<'q,DB,<DB as HasArguments>::Arguments> {
         self.change.sqlx_bind(res)
     }
-    pub async fn execute_by_scalar_pk<'c,PT>(&self, pk_scalar:PT,pool:&'c Pool<DB>) -> Result<<DB as Database>::QueryResult, Error> 
+    pub async fn execute_by_scalar_pk<'c,PT,E>(&self, pk_scalar:PT,executor:E) -> Result<<DB as Database>::QueryResult, Error> 
         where for<'q> PT:'q+ Send + sqlx::Encode<'q, DB> + sqlx::Type<DB>,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB> 
+        E: Executor<'c, Database = DB>
     {
         let table = T::table_name();
         let values = self.sql_sets();
@@ -103,13 +103,13 @@ where
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
         res=res.bind(pk_scalar);
-        res.execute(pool).await
+        executor.execute(res).await
     }
-    pub async fn execute_by_where_call<'c,RB>(
+    pub async fn execute_by_where_call<'c,RB,E>(
         &self,
         where_sql: &str,
         where_bind: RB,
-        pool:&'c Pool<DB>
+        executor:E
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
         for<'q> RB: FnOnce(
@@ -118,7 +118,7 @@ where
         ) -> Query<'q,DB,<DB as HasArguments<'q>>::Arguments>,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB> 
+        E: Executor<'c, Database = DB>
     {
         let table = T::table_name();
         let values = self.sql_sets();
@@ -131,17 +131,17 @@ where
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
         res = where_bind(res,self);
-        res.execute(pool).await
+        executor.execute(res).await
     }
-    pub async fn execute_by_where<'c>(
+    pub async fn execute_by_where<'c,E>(
         &self,
         where_sql: Option<String>,
-        pool:&'c Pool<DB>
+        executor:E
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB> 
+        E: Executor<'c, Database = DB>
     {
         let table = T::table_name();
         let values = self.sql_sets();
@@ -165,56 +165,35 @@ where
         }
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
-        res.execute(pool).await
+        executor.execute(res).await
     }
     execute_by_sql!(Update<DB,T,CT>);
-}
-
-
-
-macro_rules! update_execute_by {
-    ($bind_type:ty) => {
-        impl<'t,T, CT> Update<'t,$bind_type,T, CT>
-        where
-            T: ModelUpdateData<'t,$bind_type, CT>,
-            CT: UpdateData<'t,$bind_type>
-        {
-            pub async fn execute_by_pk<'c>(&self, source: &T,pool:&'c Pool<$bind_type>) -> Result<<$bind_type as Database>::QueryResult, Error> 
-            {
-                let table = T::table_name();
-                let pkf = T::table_pk();
-                let mut where_sql = vec![];
-                for (pos, val) in pkf.0.iter().enumerate() {
-                    let bst = DbType::type_new::<$bind_type>().mark(pos);
-                    where_sql.push(format!("{}={}", val.name, bst));
-                }
-                let values = self.sql_sets();
-                let sql = format!(
-                    "UPDATE {} SET {} WHERE {}",
-                    table.full_name(),
-                    values,
-                    where_sql.join(" and ")
-                );
-                let mut res = sqlx::query(sql.as_str());
-                res = self.bind_values(res);
-                for val in pkf.0.iter() {
-                    res = source.query_sqlx_bind(val, res);
-                }
-                res.execute(pool).await
-            }
+    pub async fn execute_by_pk<'c,E>(&self, source: &T,executor:E) 
+    -> Result<<DB as Database>::QueryResult, Error> 
+    where
+        for<'n> <DB as HasArguments<'n>>::Arguments:
+        Arguments<'n>+IntoArguments<'n,DB>,
+        E: Executor<'c, Database = DB>
+    {
+        let table = T::table_name();
+        let pkf = T::table_pk();
+        let mut where_sql = vec![];
+        for (pos, val) in pkf.0.iter().enumerate() {
+            let bst = DbType::type_new::<DB>().mark(pos);
+            where_sql.push(format!("{}={}", val.name, bst));
         }
-    };
+        let values = self.sql_sets();
+        let sql = format!(
+            "UPDATE {} SET {} WHERE {}",
+            table.full_name(),
+            values,
+            where_sql.join(" and ")
+        );
+        let mut res = sqlx::query(sql.as_str());
+        res = self.bind_values(res);
+        for val in pkf.0.iter() {
+            res = source.query_sqlx_bind(val, res);
+        }
+        executor.execute(res).await
+    }
 }
-
-
-#[cfg(feature = "sqlx-mysql")]
-update_execute_by!(sqlx::MySql);
-
-#[cfg(feature = "sqlx-sqlite")]
-update_execute_by!(sqlx::Sqlite);
-
-#[cfg(feature = "sqlx-postgres")]
-update_execute_by!(sqlx::Postgres);
-
-#[cfg(feature = "sqlx-mssql")]
-update_execute_by!(sqlx::Mssql);

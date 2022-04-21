@@ -1,5 +1,5 @@
 use sqlx::query::{QueryAs, QueryScalar};
-use sqlx::{Database, Error, FromRow, Pool,database::HasArguments};
+use sqlx::{Database, Error, FromRow, database::HasArguments};
 use std::vec;
 use super::TableName;
 use super::{DbType, ModelTableField, ModelTableName, TableFields};
@@ -8,11 +8,11 @@ use sqlx::{Arguments, Executor, IntoArguments};
 
 macro_rules! fetch_by_sql_call_row {
     ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        pub async fn $name<'c,M,SQ,RB>(
+        pub async fn $name<'c,M,SQ,RB,E>(
             &$self_var
             ,sql_call:SQ
             ,bind_call:RB
-            ,pool:&'c Pool<DB>
+            ,executor:E
         )
         ->Result<$out_type,Error>
         where
@@ -21,12 +21,12 @@ macro_rules! fetch_by_sql_call_row {
             M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
             for<'n> <DB as HasArguments<'n>>::Arguments:
                 Arguments<'n>+IntoArguments<'n,DB>,
-            &'c Pool<DB>: Executor<'c, Database = DB> 
+            E: Executor<'c, Database = DB>
         {
             let sql=sql_call(&$self_var);
             let mut res=sqlx::$query_type::<DB,M>(sql.as_str());
             res=bind_call(res,&$self_var);
-            res.$fetch_type(pool).await
+            res.$fetch_type(executor).await
         }
     };
     ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
@@ -36,10 +36,10 @@ macro_rules! fetch_by_sql_call_row {
 
 macro_rules! fetch_by_sql_row {
     ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        pub async fn $name<'c,M,SQ>(
+        pub async fn $name<'c,M,SQ,E>(
             &$self_var
             ,sql_call:SQ
-            ,pool:&'c Pool<DB>
+            ,executor:E
         )
         ->Result<$out_type,Error>
         where
@@ -47,11 +47,11 @@ macro_rules! fetch_by_sql_row {
             M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
             for<'n> <DB as HasArguments<'n>>::Arguments:
                 Arguments<'n>+IntoArguments<'n,DB>,
-            &'c Pool<DB>: Executor<'c, Database = DB> 
+            E: Executor<'c, Database = DB>
         {
             let sql=sql_call(&$self_var);
             let res=sqlx::$query_type::<DB,M>(sql.as_str());
-            res.$fetch_type(pool).await
+            res.$fetch_type(executor).await
         }
     };
     ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
@@ -62,11 +62,11 @@ macro_rules! fetch_by_sql_row {
 macro_rules! fetch_by_sql_scalar_call {
     ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
         /// M 为 Model 类型
-        pub async fn $name<'c,M,SQ, RB>(
+        pub async fn $name<'c,M,SQ, RB,E>(
             &$self_var
             , sql_call: SQ
             , bind_call: RB
-            ,pool:&'c Pool<DB>
+            ,executor:E
         )
             -> Result<$out_type, Error>
             where
@@ -76,12 +76,12 @@ macro_rules! fetch_by_sql_scalar_call {
                 M:Send + Unpin,
                 for<'n> <DB as HasArguments<'n>>::Arguments:
                     Arguments<'n>+IntoArguments<'n,DB>,
-                &'c Pool<DB>: Executor<'c, Database = DB> 
+                E: Executor<'c, Database = DB>
         {
             let sql = sql_call(&$self_var);
             let mut res = sqlx::query_scalar::<DB, M,>(sql.as_str());
             res = bind_call(res,&$self_var);
-            res.$fetch_type(pool).await
+            res.$fetch_type(executor).await
         }
     };
     ($name:ident,$fetch_type:ident,$out_type:ty)=>{
@@ -91,10 +91,10 @@ macro_rules! fetch_by_sql_scalar_call {
 macro_rules! fetch_by_sql_scalar {
     ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
         /// M 为 返回某字段类型
-        pub async fn $name<'c,M,SQ>(
+        pub async fn $name<'c,M,SQ,E>(
             &$self_var
             , sql_call: SQ
-            ,pool:&'c Pool<DB>
+            ,executor:E
         )
             -> Result<$out_type, Error>
             where
@@ -103,11 +103,11 @@ macro_rules! fetch_by_sql_scalar {
                 M:Send + Unpin,
                 for<'n> <DB as HasArguments<'n>>::Arguments:
                     Arguments<'n>+IntoArguments<'n,DB>,
-                &'c Pool<DB>: Executor<'c, Database = DB> 
+                E: Executor<'c, Database = DB>
         {
             let sql = sql_call(&$self_var);
             let res = sqlx::query_scalar::<DB, M,>(sql.as_str());
-            res.$fetch_type(pool).await
+            res.$fetch_type(executor).await
         }
     };
     ($name:ident,$fetch_type:ident,$out_type:ty)=>{
@@ -122,11 +122,11 @@ macro_rules! fetch_by_where_call {
         impl Select<$bind_type>
         {
             /// M 为 Model  类型
-            pub async fn $name<'c,M,RB>(
+            pub async fn $name<'c,M,RB,E>(
                 &$self_var,
                 where_sql:String,
                 where_bind:RB,
-                pool:&'c Pool<$bind_type>
+                executor:E
             )
                 ->Result<$out_type,Error>
                 where
@@ -134,7 +134,7 @@ macro_rules! fetch_by_where_call {
                 for<'r> M:  FromRow<'r, <$bind_type as Database>::Row>+Send+Unpin+ModelTableField<$bind_type>,
                 for<'n> <$bind_type as HasArguments<'n>>::Arguments:
                     Arguments<'n>+IntoArguments<'n,$bind_type>,
-                &'c Pool<$bind_type>: Executor<'c, Database = $bind_type> 
+                E: Executor<'c, Database = $bind_type>
             {
                 let sql=format!(
                     $sql,
@@ -144,7 +144,7 @@ macro_rules! fetch_by_where_call {
                 );
                 let mut res=sqlx::$query_type::<$bind_type, M>(sql.as_str());
                 res=where_bind(res,&$self_var);
-                res.$fetch_type(pool).await
+                res.$fetch_type(executor).await
             }
         }
     };
@@ -160,17 +160,17 @@ macro_rules! fetch_by_where {
         impl Select<$bind_type>
         {
             /// M 为 Model  类型
-            pub async fn $name<'c,M>(
+            pub async fn $name<'c,M,E>(
                 &$self_var,
                 where_sql:Option<String>,
-                pool:&'c Pool<$bind_type>
+                executor:E
             )
                 ->Result<$out_type,Error>
                 where
                 for<'r> M:  FromRow<'r, <$bind_type as Database>::Row>+Send+Unpin+ModelTableField<$bind_type>,
                 for<'n> <$bind_type as HasArguments<'n>>::Arguments:
                     Arguments<'n>+IntoArguments<'n,$bind_type>,
-                &'c Pool<$bind_type>: Executor<'c, Database = $bind_type> 
+                E: Executor<'c, Database = $bind_type>
             {
                 let sql;
                 match where_sql {
@@ -191,7 +191,7 @@ macro_rules! fetch_by_where {
                     }
                 }
                 let res=sqlx::$query_type::<$bind_type, M>(sql.as_str());
-                res.$fetch_type(pool).await
+                res.$fetch_type(executor).await
             }
         }
     };
@@ -206,12 +206,12 @@ macro_rules! fetch_by_where_scalar_call {
         impl Select<$bind_type>
         {
              /// M 为 返回某字段类型
-            pub async fn $name<'c,M, RB>(
+            pub async fn $name<'c,M, RB,E>(
                 &$self_var,
                 field_name:&str,
                 where_sql: String,
                 where_bind: RB,
-                pool:&'c Pool<$bind_type>
+                executor:E
             )
                 -> Result<$out_type, Error>
                 where
@@ -220,7 +220,7 @@ macro_rules! fetch_by_where_scalar_call {
                         M:Send + Unpin,
                         for<'n> <$bind_type as HasArguments<'n>>::Arguments:
                             Arguments<'n>+IntoArguments<'n,$bind_type>,
-                        &'c Pool<$bind_type>: Executor<'c, Database = $bind_type> 
+                        E: Executor<'c, Database = $bind_type>
                 {
                 let sql = format!(
                     $sql,
@@ -230,7 +230,7 @@ macro_rules! fetch_by_where_scalar_call {
                 );
                 let mut res = sqlx::query_scalar::<$bind_type, M,>(sql.as_str());
                 res = where_bind(res,&$self_var);
-                res.$fetch_type(pool).await
+                res.$fetch_type(executor).await
             }
         }
     };
@@ -245,11 +245,11 @@ macro_rules! fetch_by_where_scalar {
         impl Select<$bind_type>
         {
              /// M 为 返回某字段类型
-            pub async fn $name<'c,M>(
+            pub async fn $name<'c,M,E>(
                 &$self_var,
                 field_name:&str,
                 where_sql: Option<String>,
-                pool:&'c Pool<$bind_type>
+                executor:E
             )
                 -> Result<$out_type, Error>
                 where
@@ -257,7 +257,7 @@ macro_rules! fetch_by_where_scalar {
                         M:Send + Unpin,
                         for<'n> <$bind_type as HasArguments<'n>>::Arguments:
                             Arguments<'n>+IntoArguments<'n,$bind_type>,
-                        &'c Pool<$bind_type>: Executor<'c, Database = $bind_type> 
+                        E: Executor<'c, Database = $bind_type>
                 {
 
                     let sql;
@@ -279,7 +279,7 @@ macro_rules! fetch_by_where_scalar {
                         }
                     }
                 let res = sqlx::query_scalar::<$bind_type, M,>(sql.as_str());
-                res.$fetch_type(pool).await
+                res.$fetch_type(executor).await
             }
         }
     };
@@ -328,12 +328,12 @@ where DB:Database
     /// 非联合主键的表通过主键值查找某记录
     /// @field_name 需要获取的字段名
     /// @pk_scalar 主键值
-    /// @pool DB连接
+    /// @executor Executor
     /// M 为 Model 类型
-    pub async fn fetch_one_by_scalar_pk<'c,M,PT>(
+    pub async fn fetch_one_by_scalar_pk<'c,M,PT,E>(
         &self,
         pk_scalar: PT,
-        pool:&'c Pool<DB>
+        executor: E,
     )
         ->Result<M,Error>
         where
@@ -341,7 +341,7 @@ where DB:Database
         for<'r> M:  FromRow<'r, DB::Row>+Send+Unpin+ModelTableField<DB>,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB>,
+        E: Executor<'c, Database = DB>
     {
         let where_sql=scalar_pk_where!(DB,self.table_pk);
         let sql=format!(
@@ -352,18 +352,18 @@ where DB:Database
         );
         let mut res=sqlx::query_as::<DB, M,>(sql.as_str());
         res=res.bind(pk_scalar);
-        res.fetch_one(pool).await
+        res.fetch_one(executor).await
     }
     /// 非联合主键的表通过主键值查找某字段值
     /// @field_name 需要获取的字段名
     /// @pk_scalar 主键值
-    /// @pool DB连接
+    /// @executor Executor
     /// M 为 @field_name 字段类型
-    pub async fn fetch_one_scalar_by_scalar_pk<'c,M,PT>(
+    pub async fn fetch_one_scalar_by_scalar_pk<'c,M,PT,E>(
         &self,
         field_name:&str,
         pk_scalar: PT,
-        pool:&'c Pool<DB>
+        executor: E,
     )
         ->Result<M,Error>
         where
@@ -372,7 +372,7 @@ where DB:Database
         M:Send + Unpin,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB>, 
+        E: Executor<'c, Database = DB>
     {
         let where_sql=scalar_pk_where!(DB,self.table_pk);
         let sql=format!(
@@ -383,17 +383,17 @@ where DB:Database
         );
         let mut res=sqlx::query_scalar::<DB, M,>(sql.as_str());
         res=res.bind(pk_scalar);
-        res.fetch_one(pool).await
+        res.fetch_one(executor).await
     }
     /// 从DB中重新加载Model里值
     /// @val Model 变量
-    /// @pool DB连接
-    pub async fn reload<'c,M>(&self, val: &M,pool:&'c Pool<DB>)->Result<M,Error>
+    /// @executor Executor
+    pub async fn reload<'c,M,E>(&self, val: &M,executor: E)->Result<M,Error>
     where
         M: for<'r> FromRow<'r, DB::Row> + Send + Unpin+ModelTableField<DB>,
         for<'n> <DB as HasArguments<'n>>::Arguments:
             Arguments<'n>+IntoArguments<'n,DB>,
-        &'c Pool<DB>: Executor<'c, Database = DB> 
+        E: Executor<'c, Database = DB>
     {
         let pkf = M::table_pk();
         let mut where_sql = vec![];
@@ -411,7 +411,7 @@ where DB:Database
         for fval in pkf.0.iter() {
             res = val.query_as_sqlx_bind(fval, res);
         }
-        res.fetch_one(pool).await
+        res.fetch_one(executor).await
     }
 }
 

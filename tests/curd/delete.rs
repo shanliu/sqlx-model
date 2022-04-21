@@ -18,7 +18,7 @@ async fn curd_delete(){
     let _=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute(&db).await.unwrap().last_insert_id();
 
     let select=Select::type_new::<UserModel>();
-    let user=select.fetch_one_by_where::<UserModel>(None, &db).await.unwrap();
+    let user=select.fetch_one_by_where::<UserModel, _>(None, &db).await.unwrap();
     let detete=Delete::<sqlx::MySql>::new(UserModel::table_name())
         .execute_by_pk(&user, &db)
         .await.unwrap();
@@ -34,7 +34,7 @@ async fn curd_delete(){
     });
     let update_id=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute(&db).await.unwrap().last_insert_id();
     let detete=Delete::<sqlx::MySql>::new(UserModel::table_name())
-        .execute_by_scalar_pk::<UserModel,_>(update_id, &db)
+        .execute_by_scalar_pk::<UserModel,_,_>(update_id, &db)
         .await.unwrap();
     assert_eq!(detete.rows_affected(),1);
 

@@ -24,24 +24,24 @@ async fn curd_select(){
 
     //test
     let select=Select::type_new::<UserModel>();
-    let user=select.fetch_one_by_scalar_pk::<UserModel,_>(iid, &db).await.unwrap();
+    let user=select.fetch_one_by_scalar_pk::<UserModel,_,_>(iid, &db).await.unwrap();
     assert_eq!(user.id as u64,iid);
-    let user=select.reload::<UserModel>(&user, &db).await.unwrap();
+    let user=select.reload::<UserModel,_>(&user, &db).await.unwrap();
     assert_eq!(user.id as u64,iid);
-    let user=select.fetch_one_by_where::<UserModel>(Some(
+    let user=select.fetch_one_by_where::<UserModel,_>(Some(
        sql_format!("id={}",iid)
     ), &db).await.unwrap();
     assert_eq!(user.nickname,nike_name);
     let (sql,bind_res)=sqlx_model::sql_bind!(
         sqlx::MySql,r#"nickname={nickname}"#
     );
-    let user=select.fetch_one_by_where_call::<UserModel,_>(sql,|mut res,_|{
+    let user=select.fetch_one_by_where_call::<UserModel,_,_>(sql,|mut res,_|{
         sqlx_model::sql_bind_vars!(bind_res,res,{
             "nickname":nike_name.clone()
         })
     }, &db).await.unwrap();
     assert_eq!(user.nickname,nike_name);
-    let user=select.fetch_one_by_sql_call::<UserModel,_,_>(|select|{
+    let user=select.fetch_one_by_sql_call::<UserModel,_,_,_>(|select|{
         format!("select {} from {} where id >= ?","id",select.table_name)
     },|mut b,_|{
         b=b.bind(0);
@@ -49,7 +49,7 @@ async fn curd_select(){
     }, &db).await.unwrap();
     assert!(user.id>0);
     assert!(user.gender==0);
-    let user=select.fetch_one_by_sql::<UserModel,_>(|select|{
+    let user=select.fetch_one_by_sql::<UserModel,_,_>(|select|{
         format!("select {} from {} where id >= {}","id",select.table_name,iid)
     },&db).await.unwrap();
     assert!(user.id>0);
@@ -57,13 +57,13 @@ async fn curd_select(){
 
 
     //test
-    let tuser=select.fetch_one_scalar_by_where::<String>(
+    let tuser=select.fetch_one_scalar_by_where::<String,_>(
         "nickname".to_string().as_str(),
         Some(format!("id={}",iid)),
         &db
     ).await.unwrap();
     assert_eq!(tuser,nike_name);
-    let tuser=select.fetch_one_scalar_by_where_call::<String,_>(
+    let tuser=select.fetch_one_scalar_by_where_call::<String,_,_>(
         "nickname",
         format!("id=?"),
         |mut res,_|{
@@ -73,17 +73,17 @@ async fn curd_select(){
         &db
     ).await.unwrap();
     assert_eq!(tuser,nike_name);
-    let tuser=select.fetch_one_scalar_by_scalar_pk::<String,_>(
+    let tuser=select.fetch_one_scalar_by_scalar_pk::<String,_,_>(
         "nickname",
         iid,
         &db
     ).await.unwrap();
     assert_eq!(tuser,nike_name);
-    let tuser=select.fetch_one_scalar_by_sql::<String,_>(|select|{
+    let tuser=select.fetch_one_scalar_by_sql::<String,_,_>(|select|{
         sqlx_model::sql_format!("select nickname from {} where id in ({})",select.table_name,iid)
     },&db).await.unwrap();
     assert_eq!(tuser,nike_name);
-    let tuser=select.fetch_one_scalar_by_sql_call::<String,_,_>(|select|{
+    let tuser=select.fetch_one_scalar_by_sql_call::<String,_,_,_>(|select|{
         sqlx_model::sql_format!("select nickname from {} where id in (?)",select.table_name)
     },|mut b,_|{
         b=b.bind(iid);
@@ -92,13 +92,13 @@ async fn curd_select(){
     assert_eq!(tuser,nike_name);
 
     //test
-    let tuser=select.fetch_all_by_where::<UserModel>(
+    let tuser=select.fetch_all_by_where::<UserModel,_>(
         Some(format!("id>={} order by id asc",iid)),
         &db
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap().nickname,nike_name);
 
-    let tuser=select.fetch_all_by_where_call::<UserModel,_>(
+    let tuser=select.fetch_all_by_where_call::<UserModel,_,_>(
         format!("id>=? order by id asc"),
         |mut b,_|{
             b=b.bind(iid);
@@ -108,7 +108,7 @@ async fn curd_select(){
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap().nickname,nike_name);
 
-    let tuser=select.fetch_all_by_sql::<UserModel,_>(
+    let tuser=select.fetch_all_by_sql::<UserModel,_,_>(
         |_|{
             format!("select * from {} where id>={} order by id asc",UserModel::table_name(),iid)
         },
@@ -116,7 +116,7 @@ async fn curd_select(){
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap().nickname,nike_name);
 
-    let tuser=select.fetch_all_by_sql_call::<UserModel,_,_>(
+    let tuser=select.fetch_all_by_sql_call::<UserModel,_,_,_>(
         |_|{
             format!("select * from {} where id>=? order by id asc",UserModel::table_name())
         },
@@ -132,14 +132,14 @@ async fn curd_select(){
     //test
 
 
-    let tuser=select.fetch_all_scalar_by_where::<String>(
+    let tuser=select.fetch_all_scalar_by_where::<String,_>(
         "nickname",
         Some(format!("id>={} order by id asc",iid)),
         &db
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap(),&nike_name);
 
-    let tuser=select.fetch_all_scalar_by_where_call::<String,_>(
+    let tuser=select.fetch_all_scalar_by_where_call::<String,_,_>(
         "nickname",
         format!("id>=? order by id asc"),
         |mut b,_|{
@@ -150,7 +150,7 @@ async fn curd_select(){
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap(),&nike_name);
 
-    let tuser=select.fetch_all_scalar_by_sql::<String,_>(
+    let tuser=select.fetch_all_scalar_by_sql::<String,_,_>(
         |_|{
             format!("select nickname from {} where id>={} order by id asc",UserModel::table_name(),iid)
         },
@@ -158,7 +158,7 @@ async fn curd_select(){
     ).await.unwrap();
     assert_eq!(tuser.get(0).unwrap(),&nike_name);
 
-    let tuser=select.fetch_all_scalar_by_sql_call::<String,_,_>(
+    let tuser=select.fetch_all_scalar_by_sql_call::<String,_,_,_>(
         |_|{
             format!("select nickname from {} where id>=? order by id asc",UserModel::table_name())
         },

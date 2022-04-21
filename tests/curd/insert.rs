@@ -91,7 +91,6 @@ async fn curd_insert(){
     assert_eq!(i6.rows_affected(),1);
 
 
-
     let nike_name="new insert".to_string();
     let gender=1;
     let userinsert=sqlx_model::model_option_set!(UserModelRef,{
@@ -110,7 +109,6 @@ async fn curd_insert(){
         sql
     }, &db).await.unwrap();
     assert_eq!(i7.rows_affected(),1);
-    
 
     let nike_name="new insert 8".to_string();
     let gender=1;
@@ -133,5 +131,6 @@ async fn curd_insert(){
         res
     }, &db).await.unwrap();
     assert_eq!(i8.rows_affected(),1);
+
 
 }

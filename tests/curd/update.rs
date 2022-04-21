@@ -54,7 +54,7 @@ async fn curd_update(){
 
      //test find and change
     let select=Select::type_new::<UserModel>();
-    let source=select.fetch_one_by_scalar_pk::<UserModel,_>(update_id, &db).await.unwrap();
+    let source=select.fetch_one_by_scalar_pk::<UserModel,_,_>(update_id, &db).await.unwrap();
     //may be dobule check source data
     let myset_data=&UserModel{
         nickname:"change to 4".to_string(),
@@ -68,7 +68,7 @@ async fn curd_update(){
 
      //test find and change
      let select=Select::type_new::<UserModel>();
-     let source=select.fetch_one_by_scalar_pk::<UserModel,_>(update_id, &db).await.unwrap();
+     let source=select.fetch_one_by_scalar_pk::<UserModel,_,_>(update_id, &db).await.unwrap();
      //may be dobule check source data
      let nike_name="change to 5".to_string();
      let userchange=sqlx_model::model_option_set!(UserModelRef,{

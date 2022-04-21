@@ -56,11 +56,11 @@ async fn main()  {
         password_id: None,
     };
     //sql select
-    let _= Select::type_new::<UserModel>().fetch_one_by_where::<UserModel>(Some("id>1".to_string()), &pool).await.unwrap();
+    let _= Select::type_new::<UserModel>().fetch_one_by_where::<UserModel,_>(Some("id>1".to_string()), &pool).await.unwrap();
 
     //bind sql select
     let (sql,bind_res)=sqlx_model::sql_bind!(sqlx::MySql,"id>{id}");
-    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_>(sql,|mut query_res,_|{
+    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_,_>(sql,|mut query_res,_|{
         sqlx_model::sql_bind_vars!(bind_res,query_res,{
             "id":1
         })

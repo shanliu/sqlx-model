@@ -95,7 +95,7 @@ pub struct UserModel {
     let userchange=sqlx_model::model_option_set!(UserModelRef,{
     nickname:nike_name,
     });
-    let update=Update::<sqlx::MySql,UserModel,_>::new(userchange);
+    let update=Update::<sqlx::MySql,UserModel,_,_>::new(userchange);
     let update=update.execute_by_scalar_pk(1,&db).await.unwrap();
     assert_eq!(update.rows_affected(),1);
 ```
@@ -106,10 +106,25 @@ pub struct UserModel {
 
 ```rust
     let select=Select::type_new::<UserModel>();
-    let user=select.fetch_one_by_scalar_pk::<UserModel,_>(iid, &db).await.unwrap();
+    let user=select.fetch_one_by_scalar_pk::<UserModel,_,_>(iid, &db).await.unwrap();
     assert_eq!(user.id as u64,iid);
 ```
 
+5. 事务:
+
+> 更多使用方法参考 tests 目录
+
+```rust
+    let mut ta=db.begin().await.unwrap();
+    let nike_name="new tran".to_string();
+    let userinsert=sqlx_model::model_option_set!(UserModelRef,{
+        nickname:nike_name,
+        gender:11,
+    });
+    Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute(&mut ta).await.unwrap();
+    //其他 查删改操作...
+    ta.commit().await.unwrap();
+```
 
 ##### 辅助SQL生成操作
 
@@ -134,7 +149,7 @@ pub struct UserModel {
 
 ```rust
     let (sql,bind_res)=sqlx_model::sql_bind!(sqlx::MySql,"id>{id}");
-    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_>(sql,|mut query_res,_|{
+    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_,_>(sql,|mut query_res,_|{
         sqlx_model::sql_bind_vars!(bind_res,query_res,{
             "id":1
         })
