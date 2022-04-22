@@ -1,5 +1,3 @@
-use sqlx::Database;
-use sqlx::Executor;
 use sqlx::Transaction;
 use sqlx_model::{Insert};
 use crate::common::db_mysql;
@@ -21,7 +19,7 @@ async fn curd_tran(){
     assert!(i1.last_insert_id()>0);
 
 
-    test1(Some(&mut ta));
+    test1(Some(&mut ta)).await;
     //---
     let nike_name="new vec tran".to_string();
     let gender=1;
@@ -38,20 +36,20 @@ async fn curd_tran(){
 
 
 
-async fn test1<'c>(mut ta:Option<&mut Transaction<'c,sqlx::MySql>>){
+async fn test1<'c>(ta:Option<&mut Transaction<'c,sqlx::MySql>>){
     let db=db_mysql().await;
-    let ba=None;
-    let tta=match ta {
-        Some(bb)=>bb,
+    let tta;
+    let mut k=None;
+    match ta {
+        Some(a)=>{
+            tta=a;
+        }
         None=>{
-            &mut db.begin().await.unwrap()
+            k=Some(db.begin().await.unwrap());
+            tta=k.as_mut().unwrap();
         }
     };
-    
-    //let tta=ta.unwrap();
-    
-    
-    //---
+   
     let str="bbbb".to_string();
     let userinsert=sqlx_model::model_option_set!(UserModelRef,{
         nickname:str,
@@ -60,18 +58,8 @@ async fn test1<'c>(mut ta:Option<&mut Transaction<'c,sqlx::MySql>>){
     let i1=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute( tta).await.unwrap();
     assert!(i1.last_insert_id()>0);
 
-    // //---
-    // let nike_name="new vec tran".to_string();
-    // let gender=1;
-    // let userinsert=vec![sqlx_model::model_option_set!(UserModelRef,{
-    //     nickname:nike_name,
-    //     gender:gender,
-    // })];
-    // let i2=Insert::<sqlx::MySql,UserModel,_>::new_vec(userinsert).execute(tta).await.unwrap();
-    // assert!(i2.last_insert_id()>0);
-    //ta.rollback().await.unwrap(); 
-    // if ta.is_none() {
-    //     tta.commit().await.unwrap();
-    // }
+    if let Some(s)=k {
+        s.commit().await.unwrap();
+    }
 }
 
