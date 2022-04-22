@@ -9,6 +9,8 @@ async fn curd_tran(){
   
     let db=db_mysql().await;
 
+    test1(None).await;
+
     let mut ta=db.begin().await.unwrap();
     //---
     let str="bbbb".to_string();
@@ -21,6 +23,7 @@ async fn curd_tran(){
 
 
     test1(Some(&mut ta)).await;
+   
     //---
     let nike_name="new vec tran".to_string();
     let gender=1;
