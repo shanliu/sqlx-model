@@ -126,6 +126,19 @@ pub struct UserModel {
     ta.commit().await.unwrap();
 ```
 
+6. 事务跟Poll选择执行
+
+```rust 
+fn my_exec(transaction:Option<&mut Transaction<'t,sqlx::MySql>>){
+    let pool=get_db_pool();
+    let res=model_executor_option!({
+        //  transaction 为 None 用 &pool 代替 db 如果 
+        //  否则为 transaction 里的值代替 db
+        Insert::<sqlx::MySql, UserEmailModel, _>::new(idata).execute(db).await?
+    },transaction,&pool,db);
+}
+```
+
 ##### 辅助SQL生成操作
 
 > 绑定SQL查询可以用到SQLX内部查询SQL缓存,会快少许
