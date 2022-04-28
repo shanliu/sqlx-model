@@ -193,7 +193,6 @@ macro_rules! model_table_value_bind_define {
     };
 }
 
-
 #[test]
 fn test_model_define_bind_macro(){
     pub struct UserModel {
@@ -360,6 +359,44 @@ fn test_model_option_macro(){
     });
 
 }
+
+
+
+#[macro_export]
+macro_rules! model_executor_option {
+    ($block:block,$transaction:expr,$poll:expr,$execute:tt)=>{
+        match $transaction {
+            Some($execute)=>{
+                $block
+            }
+            None=>{
+                let $execute=$poll;
+                $block
+            }
+        }
+    };
+}
+
+
+
+#[test]
+fn test_model_executor_option(){
+    let va:Option<i32>=None;
+    let vb=1;
+    let a=model_executor_option!({
+        aa
+    },va,vb,aa);
+    assert!(a==1);
+    
+    let va:Option<i32>=Some(2);
+    let vb=1;
+    let a=model_executor_option!({
+        aa
+    },va,vb,aa);
+    assert!(a==2);
+
+}
+
 
 #[macro_export]
 /// 对状态类型的结构提供辅助方法
