@@ -131,10 +131,10 @@ pub struct UserModel {
 ```rust 
 fn my_exec(transaction:Option<&mut Transaction<'t,sqlx::MySql>>){
     let pool=get_db_pool();
-    let res=model_executor_option!({
-        //  transaction 为 None 用 &pool 代替 db 如果 
+    let res=executor_option!({
+        //  transaction 为 None 用 &pool 代替 db 如果 [因为execute为泛型且为&mut,多次时需要手动调用as_copy]
         //  否则为 transaction 里的值代替 db
-        Insert::<sqlx::MySql, UserEmailModel, _>::new(idata).execute(db).await?
+        Insert::<sqlx::MySql, UserEmailModel, _>::new(idata).execute(db.as_copy()).await?
     },transaction,&pool,db);
 }
 ```
