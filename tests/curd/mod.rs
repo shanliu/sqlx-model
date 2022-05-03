@@ -11,7 +11,7 @@ mod transaction;
 
 #[test]
 fn test_model_enum_status(){
-    #[derive(sqlx_model::SqlxModelStatus)]
+    #[derive(sqlx_model::SqlxModelStatus,PartialEq, Eq)]
     #[sqlx_model_status(type="u8")]
     enum UserModelStatus {
         Statu1=1,
@@ -20,4 +20,8 @@ fn test_model_enum_status(){
     assert_eq!(UserModelStatus::Statu1.eq(1),true);
     assert_eq!(UserModelStatus::Statu1.eq(2),false);
     assert_eq!(UserModelStatus::Statu2.eq(2),true);
+    let status:UserModelStatus=2.try_into().unwrap();
+    assert!(status==UserModelStatus::Statu2);
+    let status:Result<UserModelStatus, _>=3.try_into();
+    assert!(status.is_err());
 }

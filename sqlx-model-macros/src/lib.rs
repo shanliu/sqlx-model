@@ -1,6 +1,6 @@
 use proc_macro::{TokenStream};
 use quote::{quote};
-use syn::{Attribute, Data, DataStruct, DeriveInput, Fields, Meta, NestedMeta, parse_macro_input};
+use syn::{Attribute, Data, DataStruct, DeriveInput, Fields, Meta, NestedMeta, parse_macro_input, DataEnum};
 use heck::{ToLowerCamelCase,ToUpperCamelCase, ToKebabCase, ToShoutySnakeCase, ToSnakeCase,ToPascalCase};
 
 
@@ -155,7 +155,7 @@ pub fn derive_model(item: TokenStream) -> TokenStream {
             if let Fields::Named(ref fields_name) = fields {
                 let change_fields: Vec<_> = fields_name.named.iter().map(|field| {
                     let field_name = field.ident.as_ref().unwrap();
-                    let str_field_name=match get_sqlx_field_rename(&field.attrs) {
+                   let str_field_name=match get_sqlx_field_rename(&field.attrs) {
                         Some(str)=>{str}
                         _=>{
                             change_sqlx_field_rename(&rename_all,field_name.to_string())
@@ -269,8 +269,20 @@ pub fn derive_model_status(item: TokenStream) -> TokenStream {
         }
     }
     let field_type=quote::format_ident!("{}",field_type);
-    quote! {
-        sqlx_model::model_enum_status_define!(#struct_name,#field_type);
-    }.into()
+    let expanded = match input.data {
+        Data::Enum(DataEnum{ref variants,..}) => {
+            let fields: Vec<_> = variants.iter().map(|field| {
+                let field_name = field.ident.clone();
+                quote! {
+                    #struct_name::#field_name
+                }
+            }).collect();
+            quote! {
+                sqlx_model::model_enum_status_define!(#struct_name,#field_type,{#(#fields),*});
+            }
+        }
+        _ => panic!("sorry, Show is not implemented for union or enum type.")
+    };
+    expanded.into()
 }
 

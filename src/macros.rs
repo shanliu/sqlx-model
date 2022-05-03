@@ -363,10 +363,12 @@ fn test_model_option_macro(){
 
 #[macro_export]
 /// 对状态类型的结构提供辅助方法
+/// @param $enum_name 状态枚举
 /// @param $type 状态的类型
+/// @param $item 可选值列表
 macro_rules! model_enum_status_define {
-    ($self_var:ident,$struct_name:ident,$type:ty)=>{
-        impl $struct_name{
+    ($self_var:ident,$enum_name:ident,$type:ty,{$($item:expr),*$(,)?})=>{
+        impl $enum_name{
             pub fn eq(self,eq:$type)->bool{
                 return self.to()==eq;
             }
@@ -374,9 +376,26 @@ macro_rules! model_enum_status_define {
                 return self as $type
             }
         }
+        impl std::convert::TryFrom<$type> for $enum_name {
+            type Error=sqlx::Error;
+            fn try_from(value:  $type) -> Result<Self, Self::Error> {
+                $(
+                    if ($item as $type) ==value {
+                        return Ok($item);
+                    }
+                )*
+                return Err(sqlx::Error::TypeNotFound { type_name: format!("{}[{}]->{}",stringify!(i8),value,stringify!($struct_name)) })
+            }
+        }
+
     };
-    ($struct_name:ident,$type:ty)=>{
-        $crate::model_enum_status_define!(self ,$struct_name,$type);
+    ($enum_name:ident,$type:ty,{$($item:expr),*$(,)?})=>{
+        $crate::model_enum_status_define!(self ,$enum_name,$type,{$(
+            $item,
+        )*});
+    };
+    ($enum_name:ident,$type:ty)=>{
+        $crate::model_enum_status_define!(self ,$enum_name,$type,{});
     };
 }
 
@@ -385,12 +404,20 @@ macro_rules! model_enum_status_define {
 
 #[test]
 fn test_model_enum_status(){
+    #[derive(PartialEq, Eq)]
     enum UserModelStatus {
         Statu1=1,
         Statu2=2,
     }
-    crate::model_enum_status_define!(UserModelStatus,u8);
+    crate::model_enum_status_define!(UserModelStatus,u8,{
+        UserModelStatus::Statu1,
+        UserModelStatus::Statu2
+    });
     assert_eq!(UserModelStatus::Statu1.eq(1),true);
     assert_eq!(UserModelStatus::Statu1.eq(2),false);
     assert_eq!(UserModelStatus::Statu2.eq(2),true);
+    let status:UserModelStatus=2.try_into().unwrap();
+    assert!(status==UserModelStatus::Statu2);
+    let status:Result<UserModelStatus, _>=3.try_into();
+    assert!(status.is_err());
 }
