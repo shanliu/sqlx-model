@@ -178,5 +178,5 @@ where
         res = update.bind_values(res);
         executor.execute(res).await
     }
-    execute_by_sql!(Insert<DB,T,DT>);
+    //  execute_by_sql!(Insert<DB,T,DT>);
 }

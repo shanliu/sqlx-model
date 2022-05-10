@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
 use sqlx::{Database, Error};
@@ -61,6 +63,9 @@ where
             _marker: Default::default()
         }
     }
+    pub fn empty_change(&self) -> bool {
+        return self.change.diff_columns().is_empty();
+    }
     pub fn sql_sets(&self) -> String {
         let diff = self.change.diff_columns();
         let mut values = Vec::<String>::with_capacity(diff.len());
@@ -92,6 +97,9 @@ where
             Arguments<'n>+IntoArguments<'n,DB>,
         E: Executor<'c, Database = DB>
     {
+        if self.empty_change(){
+            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+        }
         let table = T::table_name();
         let values = self.sql_sets();
         let sql = format!(
@@ -120,6 +128,9 @@ where
             Arguments<'n>+IntoArguments<'n,DB>,
         E: Executor<'c, Database = DB>
     {
+        if self.empty_change(){
+            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+        }
         let table = T::table_name();
         let values = self.sql_sets();
         let sql = format!(
@@ -143,6 +154,9 @@ where
             Arguments<'n>+IntoArguments<'n,DB>,
         E: Executor<'c, Database = DB>
     {
+        if self.empty_change(){
+            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+        }
         let table = T::table_name();
         let values = self.sql_sets();
         let sql;
@@ -167,7 +181,7 @@ where
         res = self.bind_values(res);
         executor.execute(res).await
     }
-    execute_by_sql!(Update<DB,T,CT>);
+    // execute_by_sql!(Update<DB,T,CT>);
     pub async fn execute_by_pk<'c,E>(&self, source: &T,executor:E) 
     -> Result<<DB as Database>::QueryResult, Error> 
     where
@@ -175,6 +189,9 @@ where
         Arguments<'n>+IntoArguments<'n,DB>,
         E: Executor<'c, Database = DB>
     {
+        if self.empty_change(){
+            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+        }
         let table = T::table_name();
         let pkf = T::table_pk();
         let mut where_sql = vec![];

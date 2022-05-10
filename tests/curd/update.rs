@@ -86,9 +86,9 @@ async fn curd_update(){
         nickname:nike_name,
     });
     let update=Update::<sqlx::MySql,UserModel,_>::new(userchange);
-    let update=update.execute_by_sql(|me|{
+    let sql={
         let table = UserModel::table_name();
-        let values = me.sql_values_sets();
+        let values = update.sql_values_sets();
         let sql = format!(
             "UPDATE {} SET {} WHERE {}",
             table.full_name(),
@@ -96,7 +96,8 @@ async fn curd_update(){
             sql_format!("id={}",update_id)
         );
         sql
-    },&db).await.unwrap();
+    };
+    let update =sqlx::query(sql.as_str()).execute(&db).await.unwrap();
     assert_eq!(update.rows_affected(),1);
 
 
@@ -106,9 +107,9 @@ async fn curd_update(){
         nickname:nike_name,
     });
     let update=Update::<sqlx::MySql,UserModel,_>::new(userchange);
-    let update=update.execute_by_sql_call(|me|{
+    let sql={
         let table = UserModel::table_name();
-        let values = me.sql_sets();
+        let values = update.sql_sets();
         let sql = format!(
             "UPDATE {} SET {} WHERE {}",
             table.full_name(),
@@ -116,10 +117,10 @@ async fn curd_update(){
             sql_format!("id={}",update_id)
         );
         sql
-    },|mut res,update|{
-        res = update.bind_values(res);
-        res
-    },&db).await.unwrap();
+    };
+    let mut res=sqlx::query(sql.as_str());
+    res = update.bind_values(res);
+    let update =res.execute(&db).await.unwrap();
     assert_eq!(update.rows_affected(),1);
 
 }

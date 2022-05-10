@@ -6,114 +6,114 @@ use super::{DbType, ModelTableField, ModelTableName, TableFields};
 use sqlx::{Arguments, Executor, IntoArguments};
 
 
-macro_rules! fetch_by_sql_call_row {
-    ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        pub async fn $name<'c,M,SQ,RB,E>(
-            &$self_var
-            ,sql_call:SQ
-            ,bind_call:RB
-            ,executor:E
-        )
-        ->Result<$out_type,Error>
-        where
-            SQ: FnOnce(&Select<DB>) -> String,
-            RB:for<'t> FnOnce( QueryAs<'t,DB,M,<DB as HasArguments>::Arguments>,&'t Select<DB>) ->QueryAs<'t,DB,M,<DB as HasArguments<'t>>::Arguments>,
-            M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
-            for<'n> <DB as HasArguments<'n>>::Arguments:
-                Arguments<'n>+IntoArguments<'n,DB>,
-            E: Executor<'c, Database = DB>
-        {
-            let sql=sql_call(&$self_var);
-            let mut res=sqlx::$query_type::<DB,M>(sql.as_str());
-            res=bind_call(res,&$self_var);
-            res.$fetch_type(executor).await
-        }
-    };
-    ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_sql_call_row!(self,$name,$query_type,$fetch_type,$out_type);
-    };
-}
+// macro_rules! fetch_by_sql_call_row {
+//     ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
+//         pub async fn $name<'c,M,SQ,RB,E>(
+//             &$self_var
+//             ,sql_call:SQ
+//             ,bind_call:RB
+//             ,executor:E
+//         )
+//         ->Result<$out_type,Error>
+//         where
+//             SQ: FnOnce(&Select<DB>) -> String,
+//             RB:for<'t> FnOnce( QueryAs<'t,DB,M,<DB as HasArguments>::Arguments>,&'t Select<DB>) ->QueryAs<'t,DB,M,<DB as HasArguments<'t>>::Arguments>,
+//             M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
+//             for<'n> <DB as HasArguments<'n>>::Arguments:
+//                 Arguments<'n>+IntoArguments<'n,DB>,
+//             E: Executor<'c, Database = DB>
+//         {
+//             let sql=sql_call(&$self_var);
+//             let mut res=sqlx::$query_type::<DB,M>(sql.as_str());
+//             res=bind_call(res,&$self_var);
+//             res.$fetch_type(executor).await
+//         }
+//     };
+//     ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
+//         fetch_by_sql_call_row!(self,$name,$query_type,$fetch_type,$out_type);
+//     };
+// }
 
-macro_rules! fetch_by_sql_row {
-    ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        pub async fn $name<'c,M,SQ,E>(
-            &$self_var
-            ,sql_call:SQ
-            ,executor:E
-        )
-        ->Result<$out_type,Error>
-        where
-            SQ: FnOnce(&Select<DB>) -> String,
-            M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
-            for<'n> <DB as HasArguments<'n>>::Arguments:
-                Arguments<'n>+IntoArguments<'n,DB>,
-            E: Executor<'c, Database = DB>
-        {
-            let sql=sql_call(&$self_var);
-            let res=sqlx::$query_type::<DB,M>(sql.as_str());
-            res.$fetch_type(executor).await
-        }
-    };
-    ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_sql_row!(self,$name,$query_type,$fetch_type,$out_type);
-    };
-}
+// macro_rules! fetch_by_sql_row {
+//     ($self_var:ident,$name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
+//         pub async fn $name<'c,M,SQ,E>(
+//             &$self_var
+//             ,sql_call:SQ
+//             ,executor:E
+//         )
+//         ->Result<$out_type,Error>
+//         where
+//             SQ: FnOnce(&Select<DB>) -> String,
+//             M: for<'r> FromRow<'r, DB::Row>+Send+Unpin,
+//             for<'n> <DB as HasArguments<'n>>::Arguments:
+//                 Arguments<'n>+IntoArguments<'n,DB>,
+//             E: Executor<'c, Database = DB>
+//         {
+//             let sql=sql_call(&$self_var);
+//             let res=sqlx::$query_type::<DB,M>(sql.as_str());
+//             res.$fetch_type(executor).await
+//         }
+//     };
+//     ($name:ident,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
+//         fetch_by_sql_row!(self,$name,$query_type,$fetch_type,$out_type);
+//     };
+// }
 
-macro_rules! fetch_by_sql_scalar_call {
-    ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
-        /// M 为 Model 类型
-        pub async fn $name<'c,M,SQ, RB,E>(
-            &$self_var
-            , sql_call: SQ
-            , bind_call: RB
-            ,executor:E
-        )
-            -> Result<$out_type, Error>
-            where
-                SQ: FnOnce(&Select<DB>) -> String,
-                for<'t> RB: FnOnce( QueryScalar<'t,DB,M,<DB as HasArguments>::Arguments>,&'t Select<DB>) -> QueryScalar<'t,DB,M,<DB as HasArguments<'t>>::Arguments>,
-                (M,): for<'r> FromRow<'r, DB::Row> + Send + Unpin,
-                M:Send + Unpin,
-                for<'n> <DB as HasArguments<'n>>::Arguments:
-                    Arguments<'n>+IntoArguments<'n,DB>,
-                E: Executor<'c, Database = DB>
-        {
-            let sql = sql_call(&$self_var);
-            let mut res = sqlx::query_scalar::<DB, M,>(sql.as_str());
-            res = bind_call(res,&$self_var);
-            res.$fetch_type(executor).await
-        }
-    };
-    ($name:ident,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_sql_scalar_call!(self,$name,$fetch_type,$out_type);
-    };
-}
-macro_rules! fetch_by_sql_scalar {
-    ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
-        /// M 为 返回某字段类型
-        pub async fn $name<'c,M,SQ,E>(
-            &$self_var
-            , sql_call: SQ
-            ,executor:E
-        )
-            -> Result<$out_type, Error>
-            where
-                SQ: FnOnce(&Select<DB>) -> String,
-                (M,): for<'r> FromRow<'r, DB::Row> + Send + Unpin,
-                M:Send + Unpin,
-                for<'n> <DB as HasArguments<'n>>::Arguments:
-                    Arguments<'n>+IntoArguments<'n,DB>,
-                E: Executor<'c, Database = DB>
-        {
-            let sql = sql_call(&$self_var);
-            let res = sqlx::query_scalar::<DB, M,>(sql.as_str());
-            res.$fetch_type(executor).await
-        }
-    };
-    ($name:ident,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_sql_scalar!(self,$name,$fetch_type,$out_type);
-    };
-}
+// macro_rules! fetch_by_sql_scalar_call {
+//     ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
+//         /// M 为 Model 类型
+//         pub async fn $name<'c,M,SQ, RB,E>(
+//             &$self_var
+//             , sql_call: SQ
+//             , bind_call: RB
+//             ,executor:E
+//         )
+//             -> Result<$out_type, Error>
+//             where
+//                 SQ: FnOnce(&Select<DB>) -> String,
+//                 for<'t> RB: FnOnce( QueryScalar<'t,DB,M,<DB as HasArguments>::Arguments>,&'t Select<DB>) -> QueryScalar<'t,DB,M,<DB as HasArguments<'t>>::Arguments>,
+//                 (M,): for<'r> FromRow<'r, DB::Row> + Send + Unpin,
+//                 M:Send + Unpin,
+//                 for<'n> <DB as HasArguments<'n>>::Arguments:
+//                     Arguments<'n>+IntoArguments<'n,DB>,
+//                 E: Executor<'c, Database = DB>
+//         {
+//             let sql = sql_call(&$self_var);
+//             let mut res = sqlx::query_scalar::<DB, M,>(sql.as_str());
+//             res = bind_call(res,&$self_var);
+//             res.$fetch_type(executor).await
+//         }
+//     };
+//     ($name:ident,$fetch_type:ident,$out_type:ty)=>{
+//         fetch_by_sql_scalar_call!(self,$name,$fetch_type,$out_type);
+//     };
+// }
+// macro_rules! fetch_by_sql_scalar {
+//     ($self_var:ident,$name:ident,$fetch_type:ident,$out_type:ty)=>{
+//         /// M 为 返回某字段类型
+//         pub async fn $name<'c,M,SQ,E>(
+//             &$self_var
+//             , sql_call: SQ
+//             ,executor:E
+//         )
+//             -> Result<$out_type, Error>
+//             where
+//                 SQ: FnOnce(&Select<DB>) -> String,
+//                 (M,): for<'r> FromRow<'r, DB::Row> + Send + Unpin,
+//                 M:Send + Unpin,
+//                 for<'n> <DB as HasArguments<'n>>::Arguments:
+//                     Arguments<'n>+IntoArguments<'n,DB>,
+//                 E: Executor<'c, Database = DB>
+//         {
+//             let sql = sql_call(&$self_var);
+//             let res = sqlx::query_scalar::<DB, M,>(sql.as_str());
+//             res.$fetch_type(executor).await
+//         }
+//     };
+//     ($name:ident,$fetch_type:ident,$out_type:ty)=>{
+//         fetch_by_sql_scalar!(self,$name,$fetch_type,$out_type);
+//     };
+// }
 
 
 
@@ -316,14 +316,14 @@ where DB:Database
             _marker:Default::default()
         }
     }
-    fetch_by_sql_row!(fetch_one_by_sql, query_as, fetch_one, M);
-    fetch_by_sql_row!(fetch_all_by_sql, query_as, fetch_all, Vec<M>);
-    fetch_by_sql_call_row!(fetch_one_by_sql_call, query_as, fetch_one, M);
-    fetch_by_sql_call_row!(fetch_all_by_sql_call, query_as, fetch_all, Vec<M>);
-    fetch_by_sql_scalar!(fetch_one_scalar_by_sql, fetch_one, M);
-    fetch_by_sql_scalar!(fetch_all_scalar_by_sql, fetch_all, Vec<M>);
-    fetch_by_sql_scalar_call!(fetch_one_scalar_by_sql_call, fetch_one, M);
-    fetch_by_sql_scalar_call!(fetch_all_scalar_by_sql_call, fetch_all, Vec<M>);
+    // fetch_by_sql_row!(fetch_one_by_sql, query_as, fetch_one, M);
+    // fetch_by_sql_row!(fetch_all_by_sql, query_as, fetch_all, Vec<M>);
+    // fetch_by_sql_call_row!(fetch_one_by_sql_call, query_as, fetch_one, M);
+    // fetch_by_sql_call_row!(fetch_all_by_sql_call, query_as, fetch_all, Vec<M>);
+    // fetch_by_sql_scalar!(fetch_one_scalar_by_sql, fetch_one, M);
+    // fetch_by_sql_scalar!(fetch_all_scalar_by_sql, fetch_all, Vec<M>);
+    // fetch_by_sql_scalar_call!(fetch_one_scalar_by_sql_call, fetch_one, M);
+    // fetch_by_sql_scalar_call!(fetch_all_scalar_by_sql_call, fetch_all, Vec<M>);
 
     /// 非联合主键的表通过主键值查找某记录
     /// @field_name 需要获取的字段名

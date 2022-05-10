@@ -2,7 +2,7 @@ pub async fn db_mysql()->sqlx::Pool<sqlx::MySql>{
     use std::str::FromStr;
     let table_prefix = "yaf_".to_string();
     sqlx_model::TableName::set_prefix(table_prefix);
-    let database_url = "mysql://root:@127.0.0.1/test";
+    let database_url = "mysql://root:000@127.0.0.1/test";
     let option =sqlx::mysql::MySqlConnectOptions::from_str(&database_url)
         .unwrap();
     sqlx::pool::PoolOptions::<sqlx::MySql>::new()

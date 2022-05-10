@@ -71,23 +71,25 @@ async fn curd_insert(){
 
      //---
      let umodel=UserModel{
-        id:i3.last_insert_id() as u32+104,
+        id:i3.last_insert_id() as u32+201,
         nickname:"model vec ".to_string(),
         gender:1,
         headimg:Some("ddd".to_string()),
         password_id:1,
     };
-    let i6=Insert::<sqlx::MySql,UserModel,_>::model(&umodel).execute_by_sql(|me|{
+    let tmp=Insert::<sqlx::MySql,UserModel,_>::model(&umodel);
+    let sql={
         let table = UserModel::table_name();
-        let vals = me.sql_values();
+        let vals = tmp.sql_values();
         let sql=format!(
             "INSERT INTO {} ({})VALUES {}",
             table.full_name(),
-            me.fields.to_vec().join(","),
+            tmp.fields.to_vec().join(","),
             vals.join(",")
         );
         sql
-    }, &db).await.unwrap();
+    };
+    let i6 =sqlx::query(sql.as_str()).execute(&db).await.unwrap();
     assert_eq!(i6.rows_affected(),1);
 
 
@@ -97,18 +99,21 @@ async fn curd_insert(){
         nickname:nike_name,
         gender:gender,
     });
-    let i7=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute_by_sql(|me|{
+    let tmp=Insert::<sqlx::MySql,UserModel,_>::new(userinsert);
+    let sql={
         let table = UserModel::table_name();
-        let vals = me.sql_values();
+        let vals = tmp.sql_values();
         let sql=format!(
             "INSERT INTO {} ({})VALUES {}",
             table.full_name(),
-            me.fields.to_vec().join(","),
+            tmp.fields.to_vec().join(","),
             vals.join(",")
         );
         sql
-    }, &db).await.unwrap();
+    };
+    let i7 =sqlx::query(sql.as_str()).execute(&db).await.unwrap();
     assert_eq!(i7.rows_affected(),1);
+    
 
     let nike_name="new insert 8".to_string();
     let gender=1;
@@ -116,20 +121,21 @@ async fn curd_insert(){
         nickname:nike_name,
         gender:gender,
     });
-    let i8=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute_by_sql_call(|me|{
+    let tmp=Insert::<sqlx::MySql,UserModel,_>::new(userinsert);
+    let sql={
         let table = UserModel::table_name();
-        let vals = me.sql_param();
+        let vals = tmp.sql_values();
         let sql=format!(
             "INSERT INTO {} ({})VALUES {}",
             table.full_name(),
-            me.fields.to_vec().join(","),
+            tmp.fields.to_vec().join(","),
             vals.join(",")
         );
         sql
-    },|mut res,insert|{
-        res = insert.bind_values(res);
-        res
-    }, &db).await.unwrap();
+    };
+    let mut res =sqlx::query(sql.as_str());
+    res = tmp.bind_values(res);
+    let i8=res.execute(&db).await.unwrap();
     assert_eq!(i8.rows_affected(),1);
 
 
