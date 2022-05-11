@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
 use sqlx::{Database, Error};
@@ -98,7 +96,7 @@ where
         E: Executor<'c, Database = DB>
     {
         if self.empty_change(){
-            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+            return Ok(<DB as Database>::QueryResult::default());
         }
         let table = T::table_name();
         let values = self.sql_sets();
@@ -129,7 +127,7 @@ where
         E: Executor<'c, Database = DB>
     {
         if self.empty_change(){
-            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+            return Ok(<DB as Database>::QueryResult::default());
         }
         let table = T::table_name();
         let values = self.sql_sets();
@@ -155,7 +153,7 @@ where
         E: Executor<'c, Database = DB>
     {
         if self.empty_change(){
-            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+            return Ok(<DB as Database>::QueryResult::default());
         }
         let table = T::table_name();
         let values = self.sql_sets();
@@ -190,7 +188,7 @@ where
         E: Executor<'c, Database = DB>
     {
         if self.empty_change(){
-            return Err(sqlx::Error::Protocol(String::from("change data is empty")));
+            return Ok(<DB as Database>::QueryResult::default());
         }
         let table = T::table_name();
         let pkf = T::table_pk();

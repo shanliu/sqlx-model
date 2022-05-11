@@ -17,6 +17,14 @@ async fn curd_update(){
     let update_id=Insert::<sqlx::MySql,UserModel,_>::new(userinsert).execute(&db).await.unwrap().last_insert_id();
 
 
+
+    //empty update example
+    let userchange=sqlx_model::model_option_set!(UserModelRef,{
+    });
+   let update=Update::<sqlx::MySql,UserModel,_>::new(userchange);
+   let update=update.execute_by_scalar_pk(update_id,&db).await.unwrap();
+   assert_eq!(update.rows_affected(),0);
+
      //test example
      let nike_name="change to 1".to_string();
      let userchange=sqlx_model::model_option_set!(UserModelRef,{
