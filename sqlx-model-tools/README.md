@@ -145,6 +145,7 @@ lower 仅转为小写
 upper 仅转为全部大写
 snake 小写下划线
 shouty_snake  大写下划线
+shouty_kebab  大写中划线
 kebab 中划线分割
 upper_camel 转首字母大写 
 lower_camel 转驼峰

@@ -5,7 +5,7 @@ use regex::Regex;
 use tinytemplate::{TinyTemplate, format_unescaped};
 use serde::Serialize;
 use tokio::{io::AsyncWriteExt};
-use heck::{ToLowerCamelCase,ToUpperCamelCase, ToKebabCase, ToShoutySnakeCase, ToSnakeCase};
+use heck::{ToLowerCamelCase,ToUpperCamelCase, ToKebabCase, ToShoutySnakeCase, ToSnakeCase, ToShoutyKebabCase};
 use serde_json::Value;
 use std::fmt::{Result as FmtResult};
 
@@ -395,6 +395,9 @@ impl ConfigParse{
             },
             "shouty_snake" =>{
                 out_name.to_shouty_snake_case()
+            },
+            "shouty_kebab" =>{
+                out_name.to_shouty_kebab_case()
             },
             "kebab"=> {
                 out_name.to_kebab_case()
