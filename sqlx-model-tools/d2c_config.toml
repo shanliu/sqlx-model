@@ -28,14 +28,14 @@ pub struct {table.model_name}Model \\{ {{ for field in field_data }}
 {{ endfor }}}
 """
 
-#{column_name}名转换规则: 支持 lower upper_camel lower_camel kebab shouty_snake upper snake
+#{column_name}名转换规则: 参见 README.MD 规则列表
 column_name_rule="lower_camel"
 #{column_name}名前缀删除
 column_name_start_replace=""
 #{column_name}名后缀删除
 column_name_end_replace=""
 
-#{model_name}名转换规则: lower upper_camel  lower_camel kebab shouty_snake upper snake
+#{model_name}名转换规则: 参见 README.MD 规则列表
 model_name_rule="camel"
 #{model_name}名后缀删除
 model_name_start_replace=""

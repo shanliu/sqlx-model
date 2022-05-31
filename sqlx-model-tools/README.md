@@ -24,6 +24,7 @@ db-to-code d2c_config.toml
 
 > 配置说明 d2c_config.toml
 
+
 ```toml
 # 数据库连接
 db_url="mysql://user:xxx@0.0.0.0/db_name"
@@ -51,13 +52,13 @@ pub struct {table.model_name}Model \\{ {{ for field in field_data }}
     pub {field.column_name}: {field.type_name},
 {{ endfor }}}
 """
-#{column_name}名转换规则: 支持 lower upper_camel lower_camel kebab shouty_snake upper snake
+#{column_name}名转换规则: 参见规则列表
 column_name_rule="lower_camel"
 #{column_name}名前缀删除
 column_name_start_replace=""
 #{column_name}名后缀删除
 column_name_end_replace=""
-#{model_name}名转换规则: lower  upper_camel lower_camel kebab shouty_snake upper snake
+#{model_name}名转换规则: 参见规则列表
 model_name_rule="camel"
 #{model_name}名后缀删除
 model_name_start_replace=""
@@ -134,4 +135,17 @@ type_default="String"
 "^\\(.*\\)$"="\"$1\""
 [default_map.4]
 "^\\s*$"="\"\""
+```
+
+
+> 名称转换规则列表 以下值用于 column_name_rule model_name_rule
+
+```
+lower 仅转为小写
+upper 仅转为全部大写
+snake 小写下划线
+shouty_snake  大写下划线
+kebab 中划线分割
+upper_camel 转首字母大写 
+lower_camel 转驼峰
 ```
