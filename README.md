@@ -21,7 +21,7 @@
 ```toml
 [dependencies]
 sqlx-model = { version = "~0.0.1-beta.15", path = "../../",default-features = false,features = ["sqlx-mysql"] }
-sqlx = {version = "~0.5",features = [ "mysql","offline","runtime-async-std-native-tls"] }
+sqlx = {version = "~0.6",features = [ "mysql","offline","runtime-async-std-native-tls"] }
 async-std={version = "1.10.0", features = [ "attributes" ]}
 ```
 
