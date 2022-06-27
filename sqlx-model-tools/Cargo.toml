@@ -1,6 +1,6 @@
 [package]
 name = "sqlx-model-tools"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["liushan <shan.liu@msn.com>"]
 edition = "2021"
 license-file = "../LICENSE"
@@ -11,7 +11,7 @@ repository = "https://github.com/shanliu/sqlx-model/sqlx-model-tools"
 
 [dependencies]
 config = "0.13.1"
-sqlx = {version = "~0.5"}
+sqlx = {version = "~0.6"}
 tokio = {version = "1.*",features = [ "full"],optional = true}
 tinytemplate = "1.1"
 serde = { version = "1.0", features = ["derive"] }
