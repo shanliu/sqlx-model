@@ -1,99 +1,105 @@
+use super::{
+    DbType, FieldItem, ModelTableField, ModelTableName, ModelUpdateData, TableFields, Update,
+    UpdateData,
+};
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
+use sqlx::{Arguments, Executor, IntoArguments};
 use sqlx::{Database, Error};
 use std::vec;
-use super::{DbType, FieldItem, ModelTableField, ModelTableName,TableFields,ModelUpdateData,Update,UpdateData};
-use sqlx::{Arguments, Executor, IntoArguments};
 
 /// 插入操作
-pub trait InsertData<'t,DB>
-where DB:Database
+pub trait InsertData<'t, DB>
+where
+    DB: Database,
 {
-    fn columns(&self)-> Vec<FieldItem>;
+    fn columns(&self) -> Vec<FieldItem>;
     fn sqlx_bind<'q>(
         &'q self,
-        field:&FieldItem,
-        res:Query<'q,DB,<DB as HasArguments<'q>>::Arguments>,
-    ) -> Query<'q,DB,<DB as HasArguments<'q>>::Arguments>;
-    fn sqlx_string(
-        &self,
-        field:&FieldItem
-    ) ->  Option<String>;
-    
+        field: &FieldItem,
+        res: Query<'q, DB, <DB as HasArguments<'q>>::Arguments>,
+    ) -> Query<'q, DB, <DB as HasArguments<'q>>::Arguments>;
+    fn sqlx_string(&self, field: &FieldItem) -> Option<String>;
 }
-pub trait ModelInsertData<'t, DB,DT>: ModelTableField<DB>+ModelTableName
+pub trait ModelInsertData<'t, DB, DT>: ModelTableField<DB> + ModelTableName
 where
-DT: InsertData<'t,DB>,
-DB:Database
+    DT: InsertData<'t, DB>,
+    DB: Database,
 {
     fn insert_data(&'t self) -> DT;
 }
 
-pub struct Insert<'q,DB,T,DT>
+pub struct Insert<'q, DB, T, DT>
 where
-    T:ModelTableName,
-    DB:Database,
-    DT:InsertData<'q,DB>,
+    T: ModelTableName,
+    DB: Database,
+    DT: InsertData<'q, DB>,
 {
     pub val: Vec<DT>,
-    pub fields:TableFields,
-    _marker:(std::marker::PhantomData<T>,std::marker::PhantomData<&'q DT>,std::marker::PhantomData<DB>)
+    pub fields: TableFields,
+    _marker: (
+        std::marker::PhantomData<T>,
+        std::marker::PhantomData<&'q DT>,
+        std::marker::PhantomData<DB>,
+    ),
 }
-impl<'q,DB,T,DT> Insert<'q,DB,T,DT>
+impl<'q, DB, T, DT> Insert<'q, DB, T, DT>
 where
-    T:ModelTableName,
-    DT:InsertData<'q,DB>,
-    DB:Database,
+    T: ModelTableName,
+    DT: InsertData<'q, DB>,
+    DB: Database,
 {
     pub fn new(val: DT) -> Self {
-        let column=val.columns();
-        return Self{
-            val:vec![val],
-            fields:TableFields(column),
-            _marker:Default::default()
+        let column = val.columns();
+        Self {
+            val: vec![val],
+            fields: TableFields(column),
+            _marker: Default::default(),
         }
     }
     pub fn new_vec(val: Vec<DT>) -> Self {
-        let mut fields=TableFields::new(vec![]);
-        for tmp in val.iter(){
+        let mut fields = TableFields::new(vec![]);
+        for tmp in val.iter() {
             fields.marge(tmp.columns());
         }
-        return Self{
-            val:val,
-            fields:fields,
-            _marker:Default::default()
+        Self {
+            val,
+            fields,
+            _marker: Default::default(),
         }
     }
-    pub fn model<'t:'q,MI>(val: &'t MI) -> Self 
-    where MI:ModelInsertData<'q,DB,DT>
+    pub fn model<'t: 'q, MI>(val: &'t MI) -> Self
+    where
+        MI: ModelInsertData<'q, DB, DT>,
     {
-        let ival=val.insert_data();
-        let column=ival.columns();
-        return Self{
-            val:vec![ival],
-            fields:TableFields(column),
-            _marker:Default::default()
+        let ival = val.insert_data();
+        let column = ival.columns();
+        Self {
+            val: vec![ival],
+            fields: TableFields(column),
+            _marker: Default::default(),
         }
     }
-    pub fn model_vec<'t:'q,MI>(val:&'t Vec<MI>) -> Self 
-    where MI:ModelInsertData<'q,DB,DT>
+    pub fn model_vec<'t: 'q, MI>(val: &'t Vec<MI>) -> Self
+    where
+        MI: ModelInsertData<'q, DB, DT>,
     {
-        let mut vals=vec![];
-        let mut fields=TableFields::new(vec![]);
-        for tmp in val{
-            let ival=tmp.insert_data();
+        let mut vals = vec![];
+        let mut fields = TableFields::new(vec![]);
+        for tmp in val {
+            let ival = tmp.insert_data();
             fields.marge(ival.columns());
             vals.push(ival);
         }
-        return Self{
-            val:vals,
-            fields:fields,
-            _marker:Default::default()
+        Self {
+            val: vals,
+            fields,
+            _marker: Default::default(),
         }
     }
-    pub fn sql_param(&self) -> Vec<String>{
+    pub fn sql_param(&self) -> Vec<String> {
         let mut values = Vec::<String>::with_capacity(self.val.len());
-        for (gid,_) in self.val.iter().enumerate() {
+        for (gid, _) in self.val.iter().enumerate() {
             let len = self.fields.0.len();
             let mut value = Vec::with_capacity(len);
             for i in 0..len {
@@ -107,12 +113,12 @@ where
         }
         values
     }
-    pub fn sql_values(&self) -> Vec<String>{
+    pub fn sql_values(&self) -> Vec<String> {
         let mut values = Vec::<String>::with_capacity(self.val.len());
         for val in self.val.iter() {
             let mut value = Vec::with_capacity(self.fields.0.len());
             for field in &self.fields.0 {
-                if let Some(ival)=val.sqlx_string(field){
+                if let Some(ival) = val.sqlx_string(field) {
                     value.push(ival);
                 }
             }
@@ -124,8 +130,8 @@ where
     }
     pub fn bind_values<'t>(
         &'t self,
-        mut res:Query<'t,DB,<DB as HasArguments<'t>>::Arguments>,
-    ) ->Query<'t,DB,<DB as HasArguments<'t>>::Arguments>{
+        mut res: Query<'t, DB, <DB as HasArguments<'t>>::Arguments>,
+    ) -> Query<'t, DB, <DB as HasArguments<'t>>::Arguments> {
         for val in self.val.iter() {
             for field in &self.fields.0 {
                 res = val.sqlx_bind(field, res);
@@ -133,12 +139,11 @@ where
         }
         res
     }
-    pub async fn execute<'c,E>(self,executor:E,) -> Result<<DB as Database>::QueryResult, Error> 
+    pub async fn execute<'c, E>(self, executor: E) -> Result<<DB as Database>::QueryResult, Error>
     where
-        for<'n> <DB as HasArguments<'n>>::Arguments:
-            Arguments<'n>+IntoArguments<'n,DB>,
-        E: Executor<'c, Database = DB>
-     {
+        for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
+        E: Executor<'c, Database = DB>,
+    {
         let table = T::table_name();
         let vals = self.sql_param();
         let sql = format!(
@@ -152,16 +157,15 @@ where
         executor.execute(res).await
     }
     #[cfg(feature = "sqlx-mysql")]
-    pub async fn execute_update<'c,'t, CT, IT,E>(
+    pub async fn execute_update<'c, 't, CT, IT, E>(
         self,
-        update: Update<'t,DB, IT, CT>,
-        executor:E,
+        update: Update<'t, DB, IT, CT>,
+        executor: E,
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
-        IT: ModelUpdateData<'t,DB, CT>,
-        CT: UpdateData<'t,DB>,
-        for<'n> <DB as HasArguments<'n>>::Arguments:
-            Arguments<'n>+IntoArguments<'n,DB>,
+        IT: ModelUpdateData<'t, DB, CT>,
+        CT: UpdateData<'t, DB>,
+        for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
         E: Executor<'c, Database = DB>,
     {
         let table = T::table_name();

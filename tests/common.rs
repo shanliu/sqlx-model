@@ -1,15 +1,12 @@
-pub async fn db_mysql()->sqlx::Pool<sqlx::MySql>{
+pub async fn db_mysql() -> sqlx::Pool<sqlx::MySql> {
     use std::str::FromStr;
     let table_prefix = "yaf_".to_string();
     sqlx_model::TableName::set_prefix(table_prefix);
     let database_url = "mysql://root:000@127.0.0.1/test";
-    let option =sqlx::mysql::MySqlConnectOptions::from_str(&database_url)
-        .unwrap();
+    let option = sqlx::mysql::MySqlConnectOptions::from_str(database_url).unwrap();
     sqlx::pool::PoolOptions::<sqlx::MySql>::new()
         .max_connections(5)
-        .connect_with(
-            option.to_owned()
-        )
+        .connect_with(option.to_owned())
         .await
         .unwrap()
 }
@@ -22,12 +19,12 @@ pub async fn db_mysql()->sqlx::Pool<sqlx::MySql>{
 //     `password_id` int(10) unsigned NOT NULL DEFAULT 0 COMMENT '密码ID',
 //     `add_time` int(10) unsigned NOT NULL COMMENT '添加时间',
 //     PRIMARY KEY (`id`)
-//   ) ENGINE=InnoDB 
+//   ) ENGINE=InnoDB
 
-#[derive(sqlx::FromRow,sqlx_model::SqlxModel,Clone,Debug)]
+#[derive(sqlx::FromRow, sqlx_model::SqlxModel, Clone, Debug)]
 //#[sqlx(rename_all="lowercase")]
-#[sqlx_model(table_pk="id")]
-#[sqlx_model(table_name="users")]
+#[sqlx_model(table_pk = "id")]
+#[sqlx_model(table_name = "users")]
 pub struct UserModel {
     #[sqlx(default)]
     pub id: u32,
@@ -38,6 +35,6 @@ pub struct UserModel {
     #[sqlx(default)]
     pub headimg: Option<String>,
     #[sqlx(default)]
-    #[sqlx(rename="password_id")]
+    #[sqlx(rename = "password_id")]
     pub password_id: u32,
 }

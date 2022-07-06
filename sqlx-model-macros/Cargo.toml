@@ -1,6 +1,6 @@
 [package]
 name = "sqlx-model-macros"
-version = "0.0.1-beta.6"
+version = "0.0.2"
 authors = ["liushan <shan.liu@msn.com>"]
 edition = "2021"
 license-file = "../LICENSE"

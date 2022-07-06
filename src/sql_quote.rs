@@ -1,51 +1,48 @@
-
-
-
 /// 实现用于转义变量的trait
 pub trait SqlQuote<OUT>
-where OUT:std::fmt::Display
+where
+    OUT: std::fmt::Display,
 {
-    fn sql_quote(&self)->OUT;
+    fn sql_quote(&self) -> OUT;
 }
 
 /// 保留原样的变量,不自动转义,当为自定义SQL 不能当字符串串处理时使用
-pub struct SqlExpr<T:std::fmt::Display>(pub T);
-impl <T:std::fmt::Display>SqlQuote<String> for SqlExpr<T>
-{
-    fn sql_quote(&self)->String{format!("{}",&self.0)}
+pub struct SqlExpr<T: std::fmt::Display>(pub T);
+impl<T: std::fmt::Display> SqlQuote<String> for SqlExpr<T> {
+    fn sql_quote(&self) -> String {
+        format!("{}", &self.0)
+    }
 }
-
 
 macro_rules! sql_quote_self {
     ($in_type:ty) => {
-        impl SqlQuote<$in_type> for $in_type{
-            fn sql_quote(&self)->$in_type{*self}
+        impl SqlQuote<$in_type> for $in_type {
+            fn sql_quote(&self) -> $in_type {
+                *self
+            }
         }
     };
 }
 macro_rules! sql_quote_vec {
     ($in_type:ty) => {
-        impl SqlQuote<String> for $in_type
-        {
-            fn sql_quote(&self)->String{
-                self.into_iter().map(|e|{
-                    format!("{}",e.sql_quote())
-                }).collect::<Vec<String>>()
-                .join(",")
+        impl SqlQuote<String> for $in_type {
+            fn sql_quote(&self) -> String {
+                self.into_iter()
+                    .map(|e| format!("{}", e.sql_quote()))
+                    .collect::<Vec<String>>()
+                    .join(",")
             }
         }
-        impl SqlQuote<String> for &$in_type
-        {
-            fn sql_quote(&self)->String{
-                self.into_iter().map(|e|{
-                    format!("{}",e.sql_quote())
-                }).collect::<Vec<String>>()
-                .join(",")
+        impl SqlQuote<String> for &$in_type {
+            fn sql_quote(&self) -> String {
+                self.into_iter()
+                    .map(|e| format!("{}", e.sql_quote()))
+                    .collect::<Vec<String>>()
+                    .join(",")
             }
         }
     };
 }
-
 
 sql_quote_self!(i8);
 sql_quote_self!(i16);
@@ -61,42 +58,38 @@ sql_quote_self!(f32);
 sql_quote_self!(f64);
 sql_quote_self!(usize);
 sql_quote_self!(isize);
-impl SqlQuote<String> for char{
-    fn sql_quote(&self)->String{
-        if (*self)=='\'' {
+impl SqlQuote<String> for char {
+    fn sql_quote(&self) -> String {
+        if (*self) == '\'' {
             "'\\''".to_string()
         } else {
-            format!("'{}'",self)
+            format!("'{}'", self)
         }
     }
 }
-impl SqlQuote<u8> for bool{
-    fn sql_quote(&self)->u8{
+impl SqlQuote<u8> for bool {
+    fn sql_quote(&self) -> u8 {
         (*self) as u8
     }
 }
-impl SqlQuote<String> for &str{
-    fn sql_quote(&self)->String{
-        format!("'{}'",self.replace("'", "\\'"))
+impl SqlQuote<String> for &str {
+    fn sql_quote(&self) -> String {
+        format!("'{}'", self.replace('\'', "\\'"))
     }
 }
-impl SqlQuote<String> for String{
-    fn sql_quote(&self)->String{
-        format!("'{}'",self.replace("'", "\\'"))
+impl SqlQuote<String> for String {
+    fn sql_quote(&self) -> String {
+        format!("'{}'", self.replace('\'', "\\'"))
     }
 }
 
 macro_rules! sql_quote_option {
     ($in_type:ty) => {
-        impl SqlQuote<String> for Option<$in_type>{
-            fn sql_quote(&self)->String{
+        impl SqlQuote<String> for Option<$in_type> {
+            fn sql_quote(&self) -> String {
                 match self {
-                    Some(str)=>{
-                       str.sql_quote().to_string()
-                    }
-                    None=>{
-                        "NULL".to_string()
-                    }
+                    Some(str) => str.sql_quote().to_string(),
+                    None => "NULL".to_string(),
                 }
             }
         }
@@ -163,7 +156,6 @@ sql_quote_array!(bool);
 sql_quote_array!(&str);
 sql_quote_array!(String);
 
-
 #[macro_export]
 /// 转义SQL生成,对字符串中的单引号加反斜杠
 macro_rules! sql_format {
@@ -182,54 +174,80 @@ macro_rules! sql_format {
 /// 一般用在 in 语句生成
 macro_rules! sql_array_str {
     ($fmt:expr,$val:expr) => {
-        if $val.len()==0 {$crate::SqlExpr("".to_string())}
-        else {$crate::SqlExpr(format!($fmt,$val.sql_quote()))}
+        if $val.len() == 0 {
+            $crate::SqlExpr("".to_string())
+        } else {
+            $crate::SqlExpr(format!($fmt, $val.sql_quote()))
+        }
     };
 }
 #[macro_export]
 /// 根据Option中是否是NONE来生成不同的SQL
 macro_rules! sql_option_str {
     ($some_fmt:expr,$none_fmt:expr,$val:expr) => {
-        if $val.is_none() {$crate::SqlExpr(format!($none_fmt,$val.sql_quote()))}
-        else {$crate::SqlExpr(format!($some_fmt,$val.sql_quote()))}
+        if $val.is_none() {
+            $crate::SqlExpr(format!($none_fmt, $val.sql_quote()))
+        } else {
+            $crate::SqlExpr(format!($some_fmt, $val.sql_quote()))
+        }
     };
 }
 
-
 #[test]
-fn test_sql_format_macro(){
-    
-    assert_eq!(sql_format!("{var_i32}",var_i32=1),"1");
-    assert_eq!(sql_format!("{}",1 as i8),"1");
+fn test_sql_format_macro() {
+    assert_eq!(sql_format!("{var_i32}", var_i32 = 1), "1");
+    assert_eq!(sql_format!("{}", 1_i8), "1");
 
-    let aa=||{1};
-    assert_eq!(sql_format!("{}",aa()),"1");
-    fn bb()->i8{1}
-    assert_eq!(sql_format!("{}",bb()),"1");
+    let aa = || 1;
+    assert_eq!(sql_format!("{}", aa()), "1");
+    fn bb() -> i8 {
+        1
+    }
+    assert_eq!(sql_format!("{}", bb()), "1");
 
-   
-    assert_eq!(sql_format!("{}","1'1'1"),"'1\\'1\\'1'");
-    assert_eq!(sql_format!("{}","1'1'1".to_string()),"'1\\'1\\'1'");
+    assert_eq!(sql_format!("{}", "1'1'1"), "'1\\'1\\'1'");
+    assert_eq!(sql_format!("{}", "1'1'1".to_string()), "'1\\'1\\'1'");
 
-    assert_eq!(sql_format!("{}",'\''),"'\\''");
+    assert_eq!(sql_format!("{}", '\''), "'\\''");
 
-    assert_eq!(sql_format!("{}",vec!["1","2'2'2'2'"]),"'1','2\\'2\\'2\\'2\\''");
+    assert_eq!(
+        sql_format!("{}", vec!["1", "2'2'2'2'"]),
+        "'1','2\\'2\\'2\\'2\\''"
+    );
 
-    assert_eq!(sql_format!("{}",["1","2'2'2'2'"]),"'1','2\\'2\\'2\\'2\\''");
+    assert_eq!(
+        sql_format!("{}", ["1", "2'2'2'2'"]),
+        "'1','2\\'2\\'2\\'2\\''"
+    );
 
-    assert_eq!(sql_format!("{}",["1".to_string(),"2'2'2'2'".to_string()]),"'1','2\\'2\\'2\\'2\\''");
+    assert_eq!(
+        sql_format!("{}", ["1".to_string(), "2'2'2'2'".to_string()]),
+        "'1','2\\'2\\'2\\'2\\''"
+    );
 
-    assert_eq!(sql_format!("{}",vec!["1".to_string(),"2'2'2'2'".to_string()]),"'1','2\\'2\\'2\\'2\\''");
+    assert_eq!(
+        sql_format!("{}", vec!["1".to_string(), "2'2'2'2'".to_string()]),
+        "'1','2\\'2\\'2\\'2\\''"
+    );
 
-    let a:[i8;0]=[];
-    assert_eq!(sql_format!("{}",sql_array_str!("ddd in ({})",a)),"");
+    let a: [i8; 0] = [];
+    assert_eq!(sql_format!("{}", sql_array_str!("ddd in ({})", a)), "");
 
-    assert_eq!(sql_format!("{}",sql_array_str!("ddd in ({})",[1,2])),"ddd in (1,2)");
+    assert_eq!(
+        sql_format!("{}", sql_array_str!("ddd in ({})", [1, 2])),
+        "ddd in (1,2)"
+    );
 
-    assert_eq!(sql_format!("{}",sql_option_str!("a = {}","{}",Some(1))),"a = 1");
+    assert_eq!(
+        sql_format!("{}", sql_option_str!("a = {}", "{}", Some(1))),
+        "a = 1"
+    );
 
-    let i:Option<i128>=None;
-    assert_eq!(sql_format!("{}",sql_option_str!("{}","a is {}",i)),"a is NULL");
+    let i: Option<i128> = None;
+    assert_eq!(
+        sql_format!("{}", sql_option_str!("{}", "a is {}", i)),
+        "a is NULL"
+    );
 
-    assert_eq!(sql_format!("{}",SqlExpr("select 1 as a")),"select 1 as a");
+    assert_eq!(sql_format!("{}", SqlExpr("select 1 as a")), "select 1 as a");
 }
