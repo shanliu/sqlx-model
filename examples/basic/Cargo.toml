@@ -8,6 +8,6 @@ edition = "2021"
 license-file = "../../LICENSE"
 description="sqlx model demo"
 [dependencies]
-sqlx-model = { version = "~0.0.1-beta.13", path = "../../",default-features = false,features = ["sqlx-mysql"] }
-sqlx = {version = "~0.5",features = [ "mysql","offline","runtime-async-std-native-tls"] }
+sqlx-model = { version = "0.1.2", path = "../../",default-features = false,features = ["sqlx-mysql"] }
+sqlx = {version = "~0.6",features = [ "mysql","offline","runtime-async-std-rustls"] }
 async-std={version = "1.10.0", features = [ "attributes" ]}

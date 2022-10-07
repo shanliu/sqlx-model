@@ -379,6 +379,11 @@ macro_rules! model_enum_status_define {
                 return self as $type
             }
         }
+		impl $crate::SqlQuote<$type> for $enum_name {
+			fn sql_quote(&self) -> $type {
+				*self as $type
+			}
+		}
         impl std::convert::TryFrom<$type> for $enum_name {
             type Error=sqlx::Error;
             fn try_from(value:  $type) -> Result<Self, Self::Error> {
@@ -390,7 +395,6 @@ macro_rules! model_enum_status_define {
                 return Err(sqlx::Error::TypeNotFound { type_name: format!("{}[{}]->{}",stringify!(i8),value,stringify!($struct_name)) })
             }
         }
-
     };
     ($enum_name:ident,$type:ty,{$($item:expr),*$(,)?})=>{
         $crate::model_enum_status_define!(self ,$enum_name,$type,{$(
