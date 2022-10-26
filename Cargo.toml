@@ -3,7 +3,7 @@ members = [".", "sqlx-model-macros","sqlx-model-tools"]
 
 [package]
 name = "sqlx-model"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["liushan <shan.liu@msn.com>"]
 edition = "2021"
 license-file = "LICENSE"
