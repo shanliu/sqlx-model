@@ -139,6 +139,46 @@ fn my_exec(transaction:Option<&mut Transaction<'t,sqlx::MySql>>){
 }
 ```
 
+7. 日期及其他自定义字段类型支持示例
+
+```rust
+use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
+use sqlx::FromRow;
+use sqlx_model::{SqlQuote, SqlxModel};
+use std::ops::Deref;
+#[derive(sqlx::Type, Clone, Debug, PartialEq, Eq)]
+#[sqlx(transparent)]
+pub struct MyTime<Tz: TimeZone>(DateTime<Tz>);
+impl<Tz: TimeZone> Deref for MyTime<Tz> {
+    type Target = DateTime<Tz>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+ //其他自定义结构需实现 SqlQuote<T> 
+ //其中 T 为sqlx支持类型[如String,i32,i64...等]
+impl<Tz: TimeZone> SqlQuote<String> for MyTime<Tz> {
+    fn sql_quote(&self) -> String {
+        format!(
+            "{}-{}-{} {}:{}:{}",
+            self.0.year(),
+            self.0.month(),
+            self.0.day(),
+            self.0.hour(),
+            self.0.minute(),
+            self.0.second()
+        )
+    }
+}
+
+#[derive(FromRow, Clone, Debug, SqlxModel)]
+pub struct UserModel {
+    #[sqlx(default)]
+    pub id: u64,
+    pub id1: MyTime<Utc>,
+}
+```
+
 ##### 辅助SQL生成操作
 
 > 绑定SQL查询可以用到SQLX内部查询SQL缓存,会快少许
