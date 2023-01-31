@@ -34,7 +34,7 @@ async-std={version = "1.10.0", features = [ "attributes" ]}
 
 ##### 如果已有表结构,可以通过表结构生成对应的`rs`model文件,以下工具可用:
 
-> https://crates.io/crates/sqlx-model-tools 具体使用方式参考该create文档
+> https://crates.io/crates/sqlx-model-tools 具体使用方式参考[该create文档](./sqlx-model-tools)
 
 
 ```rust
