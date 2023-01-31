@@ -10,7 +10,13 @@
 
 > 目前只支持mysql,预期sqlx支持的数据库都会支持。
 
-> 安装
+> cargo 安装
+
+```shell
+cargo install sqlx-model-tools
+```
+
+> 源码安装
 
 ```shell
 cargo install --path .
