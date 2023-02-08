@@ -29,7 +29,7 @@ impl TableParseData for MySqlParse {
         table_name: &str,
     ) -> Result<Vec<DataField>, ConfigParseError> {
         let mut columns = vec![];
-        let sql = format!(" show full columns from {}", table_name);
+        let sql = format!(" show full columns from {table_name}");
         let res = sqlx::query(sql.as_str());
         let rows = res.fetch_all(&self.0).await?;
         for row in rows {

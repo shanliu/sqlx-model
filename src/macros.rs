@@ -102,7 +102,7 @@ macro_rules! model_table_ref_define {
         }
         impl<'t> $crate::ModelUpdateData<'t,sqlx::MySql, $option_struct_name<'t>> for $struct_name
         {
-            fn diff(&'t $self_var, source_opt: Option<&Self>) -> $option_struct_name<'t> {
+            fn diff(&'t $self_var, source_opt: &Option<&Self>) -> $option_struct_name<'t> {
 
                 match source_opt {
                     Some(source) => {
@@ -408,7 +408,7 @@ macro_rules! model_enum_status_define {
 
 #[test]
 fn test_model_enum_status() {
-    #[derive(PartialEq, Eq)]
+    #[derive(PartialEq, Eq, Clone, Copy)]
     enum UserModelStatus {
         Statu1 = 1,
         Statu2 = 2,

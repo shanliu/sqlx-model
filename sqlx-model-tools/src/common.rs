@@ -73,32 +73,32 @@ pub enum ConfigParseError {
 }
 impl Display for ConfigParseError {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 impl From<ConfigError> for ConfigParseError {
     fn from(err: ConfigError) -> Self {
-        ConfigParseError::Config(format!("{}", err))
+        ConfigParseError::Config(format!("{err}"))
     }
 }
 impl From<regex::Error> for ConfigParseError {
     fn from(err: regex::Error) -> Self {
-        ConfigParseError::Regex(format!("{}", err))
+        ConfigParseError::Regex(format!("{err}"))
     }
 }
 impl From<tinytemplate::error::Error> for ConfigParseError {
     fn from(err: tinytemplate::error::Error) -> Self {
-        ConfigParseError::Tpl(format!("{}", err))
+        ConfigParseError::Tpl(format!("{err}"))
     }
 }
 impl From<std::io::Error> for ConfigParseError {
     fn from(err: std::io::Error) -> Self {
-        ConfigParseError::Io(format!("{}", err))
+        ConfigParseError::Io(format!("{err}"))
     }
 }
 impl From<sqlx::Error> for ConfigParseError {
     fn from(err: sqlx::Error) -> Self {
-        ConfigParseError::Io(format!("{}", err))
+        ConfigParseError::Io(format!("{err}"))
     }
 }
 
@@ -153,7 +153,7 @@ impl ConfigParse {
                 use core::fmt::Write;
                 let mut rs = ts.replace('\n', "");
                 rs = rs.replace('\r', "");
-                write!(s, "{}", rs)?;
+                write!(s, "{rs}")?;
                 Ok(())
             }
             _ => Err(tinytemplate::error::Error::GenericError {
@@ -277,7 +277,7 @@ impl ConfigParse {
                 }
             },
             _ => {
-                println!("{}", body);
+                println!("{body}");
             }
         }
         Ok(())

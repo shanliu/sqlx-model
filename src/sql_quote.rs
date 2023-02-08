@@ -13,7 +13,24 @@ impl<T: std::fmt::Display> SqlQuote<String> for SqlExpr<T> {
         format!("{}", &self.0)
     }
 }
-
+macro_rules! array_join_to_str {
+    ($self:expr) => {
+        $self
+            .into_iter()
+            .map(|e| format!("{}", e.sql_quote()))
+            .collect::<Vec<String>>()
+            .join(",")
+    };
+}
+macro_rules! option_to_str {
+    ($self:expr) => {
+        match $self {
+            Some(str) => str.sql_quote().to_string(),
+            None => "NULL".to_string(),
+        }
+    };
+}
+//常用类型
 macro_rules! sql_quote_self {
     ($in_type:ty) => {
         impl SqlQuote<$in_type> for $in_type {
@@ -23,27 +40,6 @@ macro_rules! sql_quote_self {
         }
     };
 }
-macro_rules! sql_quote_vec {
-    ($in_type:ty) => {
-        impl SqlQuote<String> for $in_type {
-            fn sql_quote(&self) -> String {
-                self.into_iter()
-                    .map(|e| format!("{}", e.sql_quote()))
-                    .collect::<Vec<String>>()
-                    .join(",")
-            }
-        }
-        impl SqlQuote<String> for &$in_type {
-            fn sql_quote(&self) -> String {
-                self.into_iter()
-                    .map(|e| format!("{}", e.sql_quote()))
-                    .collect::<Vec<String>>()
-                    .join(",")
-            }
-        }
-    };
-}
-
 sql_quote_self!(i8);
 sql_quote_self!(i16);
 sql_quote_self!(i32);
@@ -63,7 +59,7 @@ impl SqlQuote<String> for char {
         if (*self) == '\'' {
             "'\\''".to_string()
         } else {
-            format!("'{}'", self)
+            format!("'{self}'")
         }
     }
 }
@@ -82,15 +78,12 @@ impl SqlQuote<String> for String {
         format!("'{}'", self.replace('\'', "\\'"))
     }
 }
-
+//OPTION<常用类型>
 macro_rules! sql_quote_option {
     ($in_type:ty) => {
         impl SqlQuote<String> for Option<$in_type> {
             fn sql_quote(&self) -> String {
-                match self {
-                    Some(str) => str.sql_quote().to_string(),
-                    None => "NULL".to_string(),
-                }
+                option_to_str!(self)
             }
         }
     };
@@ -131,13 +124,31 @@ sql_quote_option!(&char);
 sql_quote_option!(&String);
 sql_quote_option!(&str);
 
+//Vec<常用类型> or [常用类型]
 macro_rules! sql_quote_array {
     ($in_type:ty) => {
-        sql_quote_vec!(Vec<$in_type>);
-        sql_quote_vec!([$in_type]);
+        impl SqlQuote<String> for Vec<$in_type> {
+            fn sql_quote(&self) -> String {
+                array_join_to_str!(self)
+            }
+        }
+        impl SqlQuote<String> for &Vec<$in_type> {
+            fn sql_quote(&self) -> String {
+                array_join_to_str!(self)
+            }
+        }
+        impl SqlQuote<String> for [$in_type] {
+            fn sql_quote(&self) -> String {
+                array_join_to_str!(self)
+            }
+        }
+        impl SqlQuote<String> for &[$in_type] {
+            fn sql_quote(&self) -> String {
+                array_join_to_str!(self)
+            }
+        }
     };
 }
-
 sql_quote_array!(i8);
 sql_quote_array!(i16);
 sql_quote_array!(i32);

@@ -7,6 +7,6 @@ async fn main() {
     let config = args.next().unwrap_or_else(|| "d2c_config.toml".to_string());
     let parse = common::ConfigParse::run(config.as_str()).await;
     if let Err(err) = parse {
-        println!("error:{}", err);
+        println!("error:{err}");
     }
 }

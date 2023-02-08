@@ -1,3 +1,5 @@
+use crate::WhereOption;
+
 use super::TableName;
 use super::{DbType, ModelTableField, ModelTableName};
 use sqlx::database::HasArguments;
@@ -56,7 +58,7 @@ where
     }
     pub async fn execute_by_where<'c, E>(
         &self,
-        where_sql: Option<String>,
+        where_sql: &WhereOption,
         executor: E,
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
@@ -64,11 +66,14 @@ where
         E: Executor<'c, Database = DB>,
     {
         let sql = match where_sql {
-            Some(wsql) => {
+            WhereOption::Where(wsql) => {
                 format!("DELETE FROM {} WHERE {}", self.table_name.full_name(), wsql)
             }
-            None => {
+            WhereOption::None => {
                 format!("DELETE FROM {} ", self.table_name.full_name())
+            }
+            WhereOption::NoWhere(other) => {
+                format!("DELETE FROM {} {}", self.table_name.full_name(), other)
             }
         };
         let res = sqlx::query(sql.as_str());

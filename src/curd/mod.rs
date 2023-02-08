@@ -77,10 +77,10 @@ impl DbType {
         match self {
             DbType::Mysql => "?".to_string(),
             DbType::Sqlite => {
-                format!("${}", pos)
+                format!("${pos}")
             }
             DbType::Postgres => {
-                format!("${}", pos)
+                format!("${pos}")
             }
             DbType::MsSql => "?".to_string(),
         }
@@ -139,10 +139,10 @@ impl Display for TableFields {
         let fileds = self
             .0
             .iter()
-            .map(|e| format!("{}", e))
+            .map(|e| format!("{e}"))
             .collect::<Vec<String>>()
             .join(",");
-        write!(f, "{}", fileds)
+        write!(f, "{fileds}")
     }
 }
 impl TableFields {
@@ -150,7 +150,7 @@ impl TableFields {
         TableFields(fields)
     }
     /// 合并一批外部的表字段列表,去除重复
-    pub fn marge(&mut self, field: Vec<FieldItem>) {
+    pub fn marge(&mut self, field: &[FieldItem]) {
         for val in field.iter() {
             if !self.0.iter().any(|e| e.name == val.name) {
                 self.0.push(val.to_owned())
@@ -158,7 +158,7 @@ impl TableFields {
         }
     }
     /// 跟指定表字段列表取并集
-    pub fn intersect(&mut self, field: Vec<FieldItem>) {
+    pub fn intersect(&mut self, field: &[FieldItem]) {
         self.0 = self
             .0
             .iter()
@@ -192,6 +192,12 @@ impl TableFields {
             .map(|e| e.column_name.clone())
             .collect::<Vec<String>>()
     }
+}
+
+pub enum WhereOption {
+    None,            //无WHERE条件,且无排序等
+    Where(String),   //有WHERE条件
+    NoWhere(String), //无WHERE条件,但有排序等后续SQL
 }
 
 pub use delete::*;

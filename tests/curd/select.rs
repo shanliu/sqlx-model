@@ -37,14 +37,17 @@ async fn curd_select() {
     let user = select.reload::<UserModel, _>(&user, &db).await.unwrap();
     assert_eq!(user.id as u64, iid);
     let user = select
-        .fetch_one_by_where::<UserModel, _>(Some(sql_format!("id={}", iid)), &db)
+        .fetch_one_by_where::<UserModel, _>(
+            &sqlx_model::WhereOption::Where(sql_format!("id={}", iid)),
+            &db,
+        )
         .await
         .unwrap();
     assert_eq!(user.nickname, nike_name);
     let (sql, bind_res) = sqlx_model::sql_bind!(sqlx::MySql, r#"nickname={nickname}"#);
     let user = select
         .fetch_one_by_where_call::<UserModel, _, _>(
-            sql,
+            &sql,
             |mut res, _| {
                 sqlx_model::sql_bind_vars!(bind_res,res,{
                     "nickname":nike_name.clone()
@@ -67,7 +70,7 @@ async fn curd_select() {
     let tuser = select
         .fetch_one_scalar_by_where::<String, _>(
             "nickname".to_string().as_str(),
-            Some(format!("id={}", iid)),
+            &sqlx_model::WhereOption::Where(format!("id={iid}")),
             &db,
         )
         .await
@@ -76,7 +79,7 @@ async fn curd_select() {
     let tuser = select
         .fetch_one_scalar_by_where_call::<String, _, _>(
             "nickname",
-            "id=?".to_string(),
+            "id=?",
             |mut res, _| {
                 res = res.bind(iid);
                 res
@@ -94,14 +97,17 @@ async fn curd_select() {
 
     //test
     let tuser = select
-        .fetch_all_by_where::<UserModel, _>(Some(format!("id>={} order by id asc", iid)), &db)
+        .fetch_all_by_where::<UserModel, _>(
+            &sqlx_model::WhereOption::Where(format!("id>={iid} order by id asc")),
+            &db,
+        )
         .await
         .unwrap();
     assert_eq!(tuser.get(0).unwrap().nickname, nike_name);
 
     let tuser = select
         .fetch_all_by_where_call::<UserModel, _, _>(
-            "id>=? order by id asc".to_string(),
+            "id>=? order by id asc",
             |mut b, _| {
                 b = b.bind(iid);
                 b
@@ -117,7 +123,7 @@ async fn curd_select() {
     let tuser = select
         .fetch_all_scalar_by_where::<String, _>(
             "nickname",
-            Some(format!("id>={} order by id asc", iid)),
+            &sqlx_model::WhereOption::Where(format!("id>={iid} order by id asc")),
             &db,
         )
         .await
@@ -127,7 +133,7 @@ async fn curd_select() {
     let tuser = select
         .fetch_all_scalar_by_where_call::<String, _, _>(
             "nickname",
-            "id>=? order by id asc".to_string(),
+            "id>=? order by id asc",
             |mut b, _| {
                 b = b.bind(iid);
                 b

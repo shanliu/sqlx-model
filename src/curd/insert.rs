@@ -60,7 +60,7 @@ where
     pub fn new_vec(val: Vec<DT>) -> Self {
         let mut fields = TableFields::new(vec![]);
         for tmp in val.iter() {
-            fields.marge(tmp.columns());
+            fields.marge(&tmp.columns());
         }
         Self {
             val,
@@ -88,7 +88,7 @@ where
         let mut fields = TableFields::new(vec![]);
         for tmp in val {
             let ival = tmp.insert_data();
-            fields.marge(ival.columns());
+            fields.marge(&ival.columns());
             vals.push(ival);
         }
         Self {
@@ -159,7 +159,7 @@ where
     #[cfg(feature = "sqlx-mysql")]
     pub async fn execute_update<'c, 't, CT, IT, E>(
         self,
-        update: Update<'t, DB, IT, CT>,
+        update: &Update<'t, DB, IT, CT>,
         executor: E,
     ) -> Result<<DB as Database>::QueryResult, Error>
     where

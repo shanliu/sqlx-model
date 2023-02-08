@@ -1,3 +1,5 @@
+use crate::WhereOption;
+
 use super::{DbType, FieldItem, ModelTableField, ModelTableName};
 use sqlx::database::HasArguments;
 use sqlx::query::Query;
@@ -21,7 +23,7 @@ where
     CT: UpdateData<'t, DB>,
     DB: Database,
 {
-    fn diff(&'t self, source: Option<&Self>) -> CT;
+    fn diff(&'t self, source: &Option<&Self>) -> CT;
 }
 
 /// 更新操作
@@ -50,7 +52,7 @@ where
             _marker: Default::default(),
         }
     }
-    pub fn model<'q: 't>(val: &'q T, source: Option<&T>) -> Update<'t, DB, T, CT> {
+    pub fn model<'q: 't>(val: &'q T, source: &Option<&T>) -> Update<'t, DB, T, CT> {
         Update {
             change: val.diff(source),
             _marker: Default::default(),
@@ -142,7 +144,7 @@ where
     }
     pub async fn execute_by_where<'c, E>(
         &self,
-        where_sql: Option<String>,
+        where_sql: &WhereOption,
         executor: E,
     ) -> Result<<DB as Database>::QueryResult, Error>
     where
@@ -155,11 +157,14 @@ where
         let table = T::table_name();
         let values = self.sql_sets();
         let sql = match where_sql {
-            Some(wsql) => {
+            WhereOption::Where(wsql) => {
                 format!("UPDATE {} SET {} WHERE {}", table.full_name(), values, wsql)
             }
-            None => {
+            WhereOption::None => {
                 format!("UPDATE {} SET {}", table.full_name(), values)
+            }
+            WhereOption::NoWhere(other) => {
+                format!("UPDATE {} SET {} {}", table.full_name(), values, other)
             }
         };
         let mut res = sqlx::query(sql.as_str());

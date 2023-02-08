@@ -9,7 +9,7 @@ mod transaction;
 
 #[test]
 fn test_model_enum_status() {
-    #[derive(sqlx_model::SqlxModelStatus, PartialEq, Eq)]
+    #[derive(sqlx_model::SqlxModelStatus, PartialEq, Eq, Clone, Copy)]
     #[sqlx_model_status(type = "u8")]
     enum UserModelStatus {
         Statu1 = 1,

@@ -13,6 +13,15 @@
   </a>
 </div>
 
+0.1.*版本升级0.2.* 升级提醒
+```
+1. 部分函数的String类型改为传入&str,为了提示效率 [调用方需加个&]
+2. 为了支持当不存在where条件且需要排序等操作,更换了WHERE入参的类型,涉及以下函数:
+   [Select]fetch_all_by_where [Update] execute_by_where [Delete] execute_by_where
+   由 Option 改为了 WhereOption [调用方需修改调用],如下例:
+   select.fetch_one_by_where::<UserModel>(Some(format!("id=1")), &db).await.unwrap();
+   修改为:select.fetch_one_by_where::<UserModel>(WhereOption::Where(format!("id=1")), &db).await.unwrap();
+```
 
 ##### 引入
 
@@ -79,7 +88,7 @@ pub struct UserModel {
 
 ```rust
     let select=Select::type_new::<UserModel>();
-    let user=select.fetch_one_by_where::<UserModel>(Some(format!("id=1")), &db).await.unwrap();
+    let user=select.fetch_one_by_where::<UserModel>(&WhereOption::Where(format!("id=1")), &db).await.unwrap();
     let detete=Delete::<sqlx::MySql>::new(UserModel::table_name())
         .execute_by_pk(&user, &db)
         .await.unwrap();
@@ -105,6 +114,7 @@ pub struct UserModel {
 > 更多使用方法参考 tests 目录
 
 ```rust
+    let iid=1;
     let select=Select::type_new::<UserModel>();
     let user=select.fetch_one_by_scalar_pk::<UserModel,_,_>(iid, &db).await.unwrap();
     assert_eq!(user.id as u64,iid);
@@ -194,7 +204,7 @@ pub struct UserModel {
             in_grade=sql_array_str!("and grade in ({})",data),
             password_where=sql_option_str!("= {}","is {}",password_id)
         );
-     println!("{}",sql);//select * from yaf_users where id>1 and grade in ('dd','b\'bb') and password_id = 1
+     println!("{sql}");//select * from yaf_users where id>1 and grade in ('dd','b\'bb') and password_id = 1
     //会转义'防止sql注入
 ```
 
@@ -202,7 +212,7 @@ pub struct UserModel {
 
 ```rust
     let (sql,bind_res)=sqlx_model::sql_bind!(sqlx::MySql,"id>{id}");
-    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_,_>(sql,|mut query_res,_|{
+    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_,_>(&sql,|mut query_res,_|{
         sqlx_model::sql_bind_vars!(bind_res,query_res,{
             "id":1
         })
