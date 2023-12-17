@@ -1,34 +1,32 @@
-use std::borrow::BorrowMut;
-use std::borrow::Borrow;
 use sqlx::Pool;
 use sqlx::{Database, Transaction};
-
-
-
+use std::borrow::BorrowMut;
 
 pub trait ExecutorOptionTransaction {
-    fn as_copy(&mut self)->&mut Self;
+    fn as_copy(&mut self) -> &mut Self;
 }
 
-impl<'t,DB> ExecutorOptionTransaction for Transaction<'t,DB> where
-DB: Database, {
-    fn as_copy(&mut self)->&mut Self {
+impl<'t, DB> ExecutorOptionTransaction for Transaction<'t, DB>
+where
+    DB: Database,
+{
+    fn as_copy(&mut self) -> &mut Self {
         self.borrow_mut()
     }
 }
 
 pub trait ExecutorOptionPool {
-    fn as_copy(&self)->&Self;
+    fn as_copy(&self) -> &Self;
 }
 
-impl<DB> ExecutorOptionPool for Pool<DB> where
-DB: Database, {
-    fn as_copy(&self)->&Self {
-        self.borrow()
+impl<DB> ExecutorOptionPool for Pool<DB>
+where
+    DB: Database,
+{
+    fn as_copy(&self) -> &Self {
+        self
     }
 }
-
-
 
 #[macro_export]
 /// 对包含块代码中的链接变量选择事物或连接池
@@ -37,39 +35,32 @@ DB: Database, {
 /// @param $poll Option 不存在时 $execute 变量用此值
 /// @param $execute  $block块中用到的连接变量名
 macro_rules! executor_option {
-    ($block:block,$transaction:expr,$poll:expr,$execute:tt)=>{
+    ($block:block,$transaction:expr,$poll:expr,$execute:tt) => {
         match $transaction {
-            Some($execute)=>{
+            Some($execute) => {
                 #[allow(unused_imports)]
                 use $crate::ExecutorOptionTransaction;
                 $block
             }
-            None=>{
+            None => {
                 #[allow(unused_imports)]
                 use $crate::ExecutorOptionPool;
-                let $execute=$poll;
+                let $execute = $poll;
                 $block
             }
         }
     };
 }
 
-
-
 #[test]
-fn test_executor_option(){
-    let va:Option<i32>=None;
-    let vb=1;
-    let a=executor_option!({
-        aa
-    },va,vb,aa);
-    assert!(a==1);
-    
-    let va:Option<i32>=Some(2);
-    let vb=1;
-    let a=executor_option!({
-        aa
-    },va,vb,aa);
-    assert!(a==2);
+fn test_executor_option() {
+    let va: Option<i32> = None;
+    let vb = 1;
+    let a = executor_option!({ aa }, va, vb, aa);
+    assert!(a == 1);
 
+    let va: Option<i32> = Some(2);
+    let vb = 1;
+    let a = executor_option!({ aa }, va, vb, aa);
+    assert!(a == 2);
 }

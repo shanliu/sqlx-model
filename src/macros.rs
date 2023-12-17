@@ -4,7 +4,7 @@
 /// @param $option_struct_name 更改值临时存储的结构体名
 /// @param {$name:$type} 字段名列表:类型列表
 macro_rules! model_table_ref_define {
-    ($self_var:ident,$struct_name:ident,$option_struct_name:ident,{$($name:ident[$column_name:literal]:$type:ty),+})=>{
+    ($db_type:ty,$self_var:ident,$struct_name:ident,$option_struct_name:ident,{$($name:ident[$column_name:literal]:$type:ty),+})=>{
         #[derive(PartialEq,Eq,Debug)]
         pub struct $option_struct_name<'t> {
             $(pub $name:Option<&'t $type>),*
@@ -17,7 +17,7 @@ macro_rules! model_table_ref_define {
                 }
             }
         }
-        impl<'t> $crate::InsertData<'t,sqlx::MySql> for $option_struct_name<'t>
+        impl<'t> $crate::InsertData<'t,$db_type> for $option_struct_name<'t>
         {
             fn columns(&$self_var) -> Vec<$crate::FieldItem> {
                 let mut vec = vec![];
@@ -31,8 +31,8 @@ macro_rules! model_table_ref_define {
             fn sqlx_bind<'q>(&'q
                 $self_var,
                 field:&$crate::FieldItem,
-                mut res: sqlx::query::Query<'q,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'q>>::Arguments>,
-            ) -> sqlx::query::Query<'q,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'q>>::Arguments>{
+                mut res: sqlx::query::Query<'q,$db_type,<$db_type as sqlx::database::HasArguments<'q>>::Arguments>,
+            ) -> sqlx::query::Query<'q,$db_type,<$db_type as sqlx::database::HasArguments<'q>>::Arguments>{
                 $crate::model_table_value_bind_define!(value_bind $self_var, res, field, {$($name),+});
             }
             fn sqlx_string(&$self_var,
@@ -51,7 +51,7 @@ macro_rules! model_table_ref_define {
                 }
             }
         }
-        impl<'t> $crate::ModelInsertData<'t,sqlx::MySql,$option_struct_name<'t>> for $struct_name
+        impl<'t> $crate::ModelInsertData<'t,$db_type,$option_struct_name<'t>> for $struct_name
         {
             fn insert_data(&'t $self_var) -> $option_struct_name<'t>{
                 $option_struct_name {
@@ -61,7 +61,7 @@ macro_rules! model_table_ref_define {
                 }
             }
         }
-        impl<'t> $crate::UpdateData<'t,sqlx::MySql> for $option_struct_name<'t>
+        impl<'t> $crate::UpdateData<'t,$db_type> for $option_struct_name<'t>
         {
             fn diff_columns(&$self_var) -> Vec<$crate::FieldItem> {
                 let mut vec = vec![];
@@ -74,8 +74,8 @@ macro_rules! model_table_ref_define {
             }
             fn sqlx_bind<'q>(&'q
                 $self_var,
-                mut res: sqlx::query::Query<'q,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'q>>::Arguments>,
-            ) -> sqlx::query::Query<'q,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'q>>::Arguments>
+                mut res: sqlx::query::Query<'q,$db_type,<$db_type as sqlx::database::HasArguments<'q>>::Arguments>,
+            ) -> sqlx::query::Query<'q,$db_type,<$db_type as sqlx::database::HasArguments<'q>>::Arguments>
             {
                 $(
                     if let Some(val) = $self_var.$name {
@@ -100,7 +100,7 @@ macro_rules! model_table_ref_define {
                 None
             }
         }
-        impl<'t> $crate::ModelUpdateData<'t,sqlx::MySql, $option_struct_name<'t>> for $struct_name
+        impl<'t> $crate::ModelUpdateData<'t,$db_type, $option_struct_name<'t>> for $struct_name
         {
             fn diff(&'t $self_var, source_opt: &Option<&Self>) -> $option_struct_name<'t> {
 
@@ -123,8 +123,8 @@ macro_rules! model_table_ref_define {
             }
         }
     };
-    ($struct_name:ident,$option_struct_name:ident,{$($name:ident[$column_name:literal]:$type:ty),+$(,)?})=>{
-        $crate::model_table_ref_define!(self,$struct_name,$option_struct_name,{$($name[$column_name]:$type),+});
+    ($db_type:ty,$struct_name:ident,$option_struct_name:ident,{$($name:ident[$column_name:literal]:$type:ty),+$(,)?})=>{
+        $crate::model_table_ref_define!($db_type,self,$struct_name,$option_struct_name,{$($name[$column_name]:$type),+});
     };
 }
 
@@ -146,13 +146,13 @@ macro_rules! model_table_value_bind_define {
             }
             return $res
     };
-    ($self_var:ident,$struct_name:ident,$table_name:expr,{$($name:ident[$column_name:literal]),+},{$($pk_name:ident[$pk_column_name:literal]),+})=>{
+    ($db_type:ty,$self_var:ident,$struct_name:ident,$table_name:expr,{$($name:ident[$column_name:literal]),+},{$($pk_name:ident[$pk_column_name:literal]),+})=>{
         impl $crate::ModelTableName for $struct_name {
             fn table_name() -> $crate::TableName {
                 $crate::TableName::new($table_name)
             }
         }
-        impl $crate::ModelTableField<sqlx::MySql> for $struct_name{
+        impl $crate::ModelTableField<$db_type> for $struct_name{
             fn table_pk() -> $crate::TableFields {
                 $crate::TableFields::new(vec![
                     $(
@@ -171,25 +171,25 @@ macro_rules! model_table_value_bind_define {
                 &'t
                 $self_var,
                 field_val: &$crate::FieldItem,
-                mut res: sqlx::query::Query<'t,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'t>>::Arguments>,
-            ) -> sqlx::query::Query<'t,sqlx::MySql,<sqlx::MySql as sqlx::database::HasArguments<'t>>::Arguments>
+                mut res: sqlx::query::Query<'t,$db_type,<$db_type as sqlx::database::HasArguments<'t>>::Arguments>,
+            ) -> sqlx::query::Query<'t,$db_type,<$db_type as sqlx::database::HasArguments<'t>>::Arguments>
             {
                 $crate::model_table_value_bind_define!(value_bind $self_var, res, field_val, {$($name),+});
             }
             fn query_as_sqlx_bind<'t, M>(
                 &'t $self_var,
                 field_val: &$crate::FieldItem,
-                mut res:  sqlx::query::QueryAs<'t,sqlx::MySql, M,<sqlx::MySql as sqlx::database::HasArguments<'t>>::Arguments>,
-            ) -> sqlx::query::QueryAs<'t,sqlx::MySql, M,<sqlx::MySql as sqlx::database::HasArguments<'t>>::Arguments>
+                mut res:  sqlx::query::QueryAs<'t,$db_type, M,<$db_type as sqlx::database::HasArguments<'t>>::Arguments>,
+            ) -> sqlx::query::QueryAs<'t,$db_type, M,<$db_type as sqlx::database::HasArguments<'t>>::Arguments>
             where
-                for<'r> M: sqlx::FromRow<'r, sqlx::mysql::MySqlRow> + Send + Unpin,
+                for<'r> M: sqlx::FromRow<'r, <$db_type as sqlx::Database>::Row> + Send + Unpin,
             {
                 $crate::model_table_value_bind_define!(value_bind $self_var, res, field_val,{$($name),+});
             }
         }
     };
-    ($struct_name:ident,$table_name:expr,{$($name:ident[$column_name:literal]),+},{$($pk_name:ident[$pk_column_name:literal]),+$(,)?})=>{
-        $crate::model_table_value_bind_define!(self ,$struct_name,$table_name,{$($name[$column_name]),+},{$($pk_name[$pk_column_name]),+});
+    ($db_type:ty,$struct_name:ident,$table_name:expr,{$($name:ident[$column_name:literal]),+},{$($pk_name:ident[$pk_column_name:literal]),+$(,)?})=>{
+        $crate::model_table_value_bind_define!($db_type,self ,$struct_name,$table_name,{$($name[$column_name]),+},{$($pk_name[$pk_column_name]),+});
     };
 }
 
@@ -202,7 +202,7 @@ fn test_model_define_bind_macro() {
         pub headimg: Option<String>,
         pub password_id: u32,
     }
-    crate::model_table_value_bind_define!(UserModel,"user",{
+    crate::model_table_value_bind_define!(sqlx::MySql,UserModel,"user",{
         id["id"],
         nickname["nickname"],
         gender["gender"],
@@ -211,7 +211,7 @@ fn test_model_define_bind_macro() {
     },{
         id["id"]
     });
-    crate::model_table_ref_define!(UserModel,UserModelRef,{
+    crate::model_table_ref_define!(sqlx::MySql,UserModel,UserModelRef,{
         id["id"]: u32,
         nickname["nickname"]: String,
         gender["gender"]: u8,

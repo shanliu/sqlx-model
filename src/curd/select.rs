@@ -1,45 +1,8 @@
 use super::TableName;
 use super::{DbType, ModelTableField, ModelTableName, TableFields, WhereOption};
-use sqlx::query::{QueryAs, QueryScalar};
 use sqlx::{database::HasArguments, Database, Error, FromRow};
 use sqlx::{Arguments, Executor, IntoArguments};
 use std::vec;
-
-macro_rules! fetch_by_where_call {
-    ($self_var:ident,$bind_type:ty,$name:ident,$sql:literal,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        impl Select<$bind_type>
-        {
-            /// M 为 Model  类型
-            pub async fn $name<'c,M,RB,E>(
-                &$self_var,
-                where_sql:&str,
-                where_bind:RB,
-                executor:E
-            )
-                ->Result<$out_type,Error>
-                where
-                for<'t> RB: FnOnce( QueryAs<'t,$bind_type,M,<$bind_type as HasArguments>::Arguments>,&'t Select<$bind_type>) -> QueryAs<'t,$bind_type,M,<$bind_type as HasArguments<'t>>::Arguments>,
-                for<'r> M:  FromRow<'r, <$bind_type as Database>::Row>+Send+Unpin+ModelTableField<$bind_type>,
-                for<'n> <$bind_type as HasArguments<'n>>::Arguments:
-                    Arguments<'n>+IntoArguments<'n,$bind_type>,
-                E: Executor<'c, Database = $bind_type>
-            {
-                let sql=format!(
-                    $sql,
-                    $self_var.table_field.to_vec().join(","),
-                    $self_var.table_name.full_name(),
-                    where_sql
-                );
-                let mut res=sqlx::$query_type::<$bind_type, M>(sql.as_str());
-                res=where_bind(res,&$self_var);
-                res.$fetch_type(executor).await
-            }
-        }
-    };
-    ($bind_type:ty,$name:ident,$sql:literal,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_where_call!(self,$bind_type,$name,$sql,$query_type,$fetch_type,$out_type);
-    };
-}
 
 macro_rules! fetch_by_where {
     ($self_var:ident,$bind_type:ty,$name:ident,$sql:literal,$where_sql:literal,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
@@ -94,44 +57,6 @@ macro_rules! fetch_by_where {
     };
     ($bind_type:ty,$name:ident,$sql:literal,$where_sql:literal,$query_type:ident,$fetch_type:ident,$out_type:ty)=>{
         fetch_by_where!(self,$bind_type,$name,$sql,$where_sql,$query_type,$fetch_type,$out_type);
-    };
-}
-
-macro_rules! fetch_by_where_scalar_call {
-    ($self_var:ident,$bind_type:ty,$name:ident,$sql:literal,$fetch_type:ident,$out_type:ty)=>{
-        impl Select<$bind_type>
-        {
-             /// M 为 返回某字段类型
-            pub async fn $name<'c,M, RB,E>(
-                &$self_var,
-                field_name:&str,
-                where_sql: &str,
-                where_bind: RB,
-                executor:E
-            )
-                -> Result<$out_type, Error>
-                where
-                        for<'t> RB: FnOnce(QueryScalar<'t,$bind_type,M,<$bind_type as HasArguments>::Arguments>,&'t Select<$bind_type>) ->QueryScalar<'t,$bind_type,M,<$bind_type as HasArguments<'t>>::Arguments>,
-                        (M,): for<'r> FromRow<'r, <$bind_type as Database>::Row> + Send + Unpin,
-                        M:Send + Unpin,
-                        for<'n> <$bind_type as HasArguments<'n>>::Arguments:
-                            Arguments<'n>+IntoArguments<'n,$bind_type>,
-                        E: Executor<'c, Database = $bind_type>
-                {
-                let sql = format!(
-                    $sql,
-                    field_name,
-                    $self_var.table_name.full_name(),
-                    where_sql
-                );
-                let mut res = sqlx::query_scalar::<$bind_type, M,>(sql.as_str());
-                res = where_bind(res,&$self_var);
-                res.$fetch_type(executor).await
-            }
-        }
-    };
-    ($bind_type:ty,$name:ident,$sql:literal,$fetch_type:ident,$out_type:ty)=>{
-        fetch_by_where_scalar_call!(self,$bind_type,$name,$sql,$fetch_type,$out_type);
     };
 }
 
@@ -244,7 +169,7 @@ where
         for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
         E: Executor<'c, Database = DB>,
     {
-        let where_sql = scalar_pk_where!(DB, self.table_pk);
+        let where_sql = scalar_pk_where!(DB, self.table_pk, 0);
         let sql = format!(
             "SELECT {} FROM {} WHERE {}",
             self.table_field.to_vec().join(","),
@@ -273,7 +198,7 @@ where
         for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
         E: Executor<'c, Database = DB>,
     {
-        let where_sql = scalar_pk_where!(DB, self.table_pk);
+        let where_sql = scalar_pk_where!(DB, self.table_pk, 0);
         let sql = format!(
             "SELECT {} FROM {} WHERE {}",
             field_name,
@@ -395,79 +320,6 @@ fetch_by_where!(
 );
 
 #[cfg(feature = "sqlx-mysql")]
-fetch_by_where_call!(
-    sqlx::MySql,
-    fetch_all_by_where_call,
-    "SELECT {} FROM {} WHERE {}",
-    query_as,
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-mysql")]
-fetch_by_where_call!(
-    sqlx::MySql,
-    fetch_one_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    query_as,
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-sqlite")]
-fetch_by_where_call!(
-    sqlx::Sqlite,
-    fetch_all_by_where_call,
-    "SELECT {} FROM {} WHERE {}",
-    query_as,
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-sqlite")]
-fetch_by_where_call!(
-    sqlx::Sqlite,
-    fetch_one_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    query_as,
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-postgres")]
-fetch_by_where_call!(
-    sqlx::Postgres,
-    fetch_all_by_where_call,
-    "SELECT {} FROM {} WHERE {}",
-    query_as,
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-postgres")]
-fetch_by_where_call!(
-    sqlx::Postgres,
-    fetch_one_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    query_as,
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-mssql")]
-fetch_by_where_call!(
-    sqlx::Mssql,
-    fetch_all_by_where_call,
-    "SELECT {} FROM {} WHERE {}",
-    query_as,
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-mssql")]
-fetch_by_where_call!(
-    sqlx::Mssql,
-    fetch_one_by_where_call,
-    "SELECT TOP 1 {} FROM {} WHERE {}",
-    query_as,
-    fetch_one,
-    M
-);
-
-#[cfg(feature = "sqlx-mysql")]
 fetch_by_where_scalar!(
     sqlx::MySql,
     fetch_all_scalar_by_where,
@@ -535,71 +387,6 @@ fetch_by_where_scalar!(
     sqlx::Mssql,
     fetch_one_scalar_by_where,
     "SELECT TOP 1 {} FROM {}",
-    "SELECT TOP 1 {} FROM {} WHERE {}",
-    fetch_one,
-    M
-);
-
-#[cfg(feature = "sqlx-mysql")]
-fetch_by_where_scalar_call!(
-    sqlx::MySql,
-    fetch_all_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} ",
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-mysql")]
-fetch_by_where_scalar_call!(
-    sqlx::MySql,
-    fetch_one_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-sqlite")]
-fetch_by_where_scalar_call!(
-    sqlx::Sqlite,
-    fetch_all_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} ",
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-sqlite")]
-fetch_by_where_scalar_call!(
-    sqlx::Sqlite,
-    fetch_one_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-postgres")]
-fetch_by_where_scalar_call!(
-    sqlx::Postgres,
-    fetch_all_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} ",
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-postgres")]
-fetch_by_where_scalar_call!(
-    sqlx::Postgres,
-    fetch_one_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} LIMIT 1",
-    fetch_one,
-    M
-);
-#[cfg(feature = "sqlx-mssql")]
-fetch_by_where_scalar_call!(
-    sqlx::Mssql,
-    fetch_all_scalar_by_where_call,
-    "SELECT {} FROM {} WHERE {} ",
-    fetch_all,
-    Vec<M>
-);
-#[cfg(feature = "sqlx-mssql")]
-fetch_by_where_scalar_call!(
-    sqlx::Mssql,
-    fetch_one_scalar_by_where_call,
     "SELECT TOP 1 {} FROM {} WHERE {}",
     fetch_one,
     M

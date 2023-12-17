@@ -3,7 +3,6 @@ use crate::WhereOption;
 use super::TableName;
 use super::{DbType, ModelTableField, ModelTableName};
 use sqlx::database::HasArguments;
-use sqlx::query::Query;
 use sqlx::{Arguments, Database, Error, Executor, IntoArguments};
 
 /// 删除操作
@@ -32,29 +31,6 @@ where
             table_name,
             _marker: Default::default(),
         }
-    }
-    pub async fn execute_by_where_call<'c, RB, E>(
-        &self,
-        where_sql: &str,
-        where_bind: RB,
-        executor: E,
-    ) -> Result<<DB as Database>::QueryResult, Error>
-    where
-        for<'q> RB: FnOnce(
-            Query<'q, DB, <DB as HasArguments<'q>>::Arguments>,
-            &'q Delete<DB>,
-        ) -> Query<'q, DB, <DB as HasArguments<'q>>::Arguments>,
-        for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
-        E: Executor<'c, Database = DB>,
-    {
-        let sql = format!(
-            "DELETE FROM {} WHERE {}",
-            self.table_name.full_name(),
-            where_sql
-        );
-        let mut res = sqlx::query(sql.as_str());
-        res = where_bind(res, self);
-        executor.execute(res).await
     }
     pub async fn execute_by_where<'c, E>(
         &self,
@@ -120,7 +96,7 @@ where
         let sql = format!(
             "DELETE FROM {} WHERE {}",
             self.table_name.full_name(),
-            scalar_pk_where!(DB, T::table_pk())
+            scalar_pk_where!(DB, T::table_pk(), 0)
         );
         let mut res = sqlx::query(sql.as_str());
         res = res.bind(pk_scalar);

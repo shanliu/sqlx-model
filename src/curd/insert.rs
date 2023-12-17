@@ -139,6 +139,29 @@ where
         }
         res
     }
+    #[cfg(feature = "sqlx-postgres")]
+    pub async fn execute_return<'c, E>(
+        self,
+        executor: E,
+        filed: &str,
+    ) -> Result<<DB as Database>::Row, Error>
+    where
+        for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
+        E: Executor<'c, Database = DB>,
+    {
+        let table = T::table_name();
+        let vals = self.sql_param();
+        let sql = format!(
+            "INSERT INTO {} ({})VALUES {} RETURNING {}",
+            table.full_name(),
+            self.fields.to_vec().join(","),
+            vals.join(","),
+            filed
+        );
+        let mut res = sqlx::query(sql.as_str());
+        res = self.bind_values(res);
+        executor.fetch_one(res).await
+    }
     pub async fn execute<'c, E>(self, executor: E) -> Result<<DB as Database>::QueryResult, Error>
     where
         for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,

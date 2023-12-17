@@ -1,6 +1,6 @@
-use crate::common::db_mysql;
-use crate::common::UserModel;
-use crate::common::UserModelRef;
+use crate::curd_mysql::common::db_mysql;
+use crate::curd_mysql::common::UserModel;
+use crate::curd_mysql::common::UserModelRef;
 use sqlx_model::{Insert, ModelTableName, Update};
 #[tokio::test]
 async fn curd_insert() {

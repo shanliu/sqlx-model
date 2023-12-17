@@ -191,10 +191,6 @@ pub struct UserModel {
 
 ##### 辅助SQL生成操作
 
-> 绑定SQL查询可以用到SQLX内部查询SQL缓存,会快少许
-
-1. 自动转义SQL生成
-
 ```rust
      let data=["dd","b'bb"];
      let password_id=Some(1);
@@ -206,15 +202,4 @@ pub struct UserModel {
         );
      println!("{sql}");//select * from yaf_users where id>1 and grade in ('dd','b\'bb') and password_id = 1
     //会转义'防止sql注入
-```
-
-2. 绑定SQL方式SQL生成
-
-```rust
-    let (sql,bind_res)=sqlx_model::sql_bind!(sqlx::MySql,"id>{id}");
-    let _= Select::type_new::<UserModel>().fetch_one_by_where_call::<UserModel,_,_>(&sql,|mut query_res,_|{
-        sqlx_model::sql_bind_vars!(bind_res,query_res,{
-            "id":1
-        })
-    }, &pool).await.unwrap();
 ```

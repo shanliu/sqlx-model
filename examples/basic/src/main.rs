@@ -59,19 +59,5 @@ async fn main() {
         .await
         .unwrap();
 
-    //bind sql select
-    let (sql, bind_res) = sqlx_model::sql_bind!(sqlx::MySql, "id>{id}");
-    let _ = Select::type_new::<UserModel>()
-        .fetch_one_by_where_call::<UserModel, _, _>(
-            &sql,
-            |mut query_res, _| {
-                sqlx_model::sql_bind_vars!(bind_res,query_res,{
-                    "id":1
-                })
-            },
-            &pool,
-        )
-        .await
-        .unwrap();
     //more example,see tests
 }

@@ -1,6 +1,6 @@
-use crate::common::db_mysql;
-use crate::common::UserModel;
-use crate::common::UserModelRef;
+use crate::curd_mysql::common::db_mysql;
+use crate::curd_mysql::common::UserModel;
+use crate::curd_mysql::common::UserModelRef;
 use sqlx_model::{sql_format, Insert, SqlQuote, Update};
 use sqlx_model::{ModelTableName, Select};
 #[tokio::test]
@@ -44,26 +44,6 @@ async fn curd_update() {
     let update = update
         .execute_by_where(
             &sqlx_model::WhereOption::Where(sql_format!("id={}", update_id)),
-            &db,
-        )
-        .await
-        .unwrap();
-    assert_eq!(update.rows_affected(), 1);
-
-    //test example
-    let nike_name = "change to 3".to_string();
-    let userchange = sqlx_model::model_option_set!(UserModelRef,{
-        nickname:nike_name,
-    });
-    let update = Update::<sqlx::MySql, UserModel, _>::new(userchange);
-    let update = update
-        .execute_by_where_call(
-            "id=? and password_id=?",
-            |mut res, _| {
-                res = res.bind(update_id);
-                res = res.bind(1);
-                res
-            },
             &db,
         )
         .await

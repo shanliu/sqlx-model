@@ -15,16 +15,17 @@ use std::fmt::Display;
 static mut TABLE_PREFIX: String = String::new();
 /// 表名
 pub struct TableName {
+    db: String,
     name: String,
 }
 impl Display for TableName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        unsafe { write!(f, "{}{}", TABLE_PREFIX, self.name) }
+        unsafe { write!(f, "{}{}{}", self.db, TABLE_PREFIX, self.name) }
     }
 }
 impl SqlQuote<String> for TableName {
     fn sql_quote(&self) -> String {
-        unsafe { format!("{}{}", TABLE_PREFIX, self.name) }
+        unsafe { format!("{}{}{}", self.db, TABLE_PREFIX, self.name) }
     }
 }
 impl TableName {
@@ -36,13 +37,18 @@ impl TableName {
     }
     /// 新建表名
     pub fn new(name: &str) -> Self {
+        let (db, name) = match name.rfind('.') {
+            Some(index) => name.split_at(index + 1),
+            None => ("", name),
+        };
         Self {
-            name: name.to_string(),
+            db: db.to_string(),
+            name: name.to_owned(),
         }
     }
     /// 得到完整表名
     pub fn full_name(&self) -> String {
-        unsafe { format!("{}{}", TABLE_PREFIX, self.name) }
+        unsafe { format!("{}{}{}", self.db, TABLE_PREFIX, self.name) }
     }
 }
 #[derive(PartialEq, Eq)]
@@ -80,7 +86,7 @@ impl DbType {
                 format!("${pos}")
             }
             DbType::Postgres => {
-                format!("${pos}")
+                format!("${}", pos + 1)
             }
             DbType::MsSql => "?".to_string(),
         }

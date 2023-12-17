@@ -21,10 +21,9 @@ pub async fn db_mysql() -> sqlx::Pool<sqlx::MySql> {
 //     PRIMARY KEY (`id`)
 //   ) ENGINE=InnoDB
 
-#[derive(sqlx::FromRow, sqlx_model::SqlxModel, Clone, Debug)]
+#[derive(sqlx::FromRow, Clone, Debug)]
 //#[sqlx(rename_all="lowercase")]
-#[sqlx_model(table_pk = "id")]
-#[sqlx_model(table_name = "users")]
+#[sqlx_model::sqlx_model(db_type = "MySql", table_pk = "id", table_name = "users")]
 pub struct UserModel {
     #[sqlx(default)]
     pub id: u32,

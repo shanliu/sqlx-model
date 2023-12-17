@@ -1,5 +1,5 @@
-mod common;
-
+#[cfg(test)]
+mod curd_mysql;
 
 #[cfg(test)]
-mod curd;
+mod curd_pgsql;

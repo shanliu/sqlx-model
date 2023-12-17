@@ -3,14 +3,16 @@ mod update;
 
 mod select;
 
+mod common;
+
 mod delete;
 
 mod transaction;
 
 #[test]
 fn test_model_enum_status() {
-    #[derive(sqlx_model::SqlxModelStatus, PartialEq, Eq, Clone, Copy)]
-    #[sqlx_model_status(type = "u8")]
+    #[derive(PartialEq, Eq, Clone, Copy)]
+    #[sqlx_model::sqlx_model_status(field_type = "u8")]
     enum UserModelStatus {
         Statu1 = 1,
         Statu2 = 2,

@@ -105,41 +105,12 @@ where
             "UPDATE {} SET {} WHERE {}",
             table.full_name(),
             values,
-            scalar_pk_where!(DB, T::table_pk())
+            scalar_pk_where!(DB, T::table_pk(), self.change.diff_columns().len())
         );
+
         let mut res = sqlx::query(sql.as_str());
         res = self.bind_values(res);
         res = res.bind(pk_scalar);
-        executor.execute(res).await
-    }
-    pub async fn execute_by_where_call<'c, RB, E>(
-        &self,
-        where_sql: &str,
-        where_bind: RB,
-        executor: E,
-    ) -> Result<<DB as Database>::QueryResult, Error>
-    where
-        for<'q> RB: FnOnce(
-            Query<'q, DB, <DB as HasArguments>::Arguments>,
-            &'q Update<DB, T, CT>,
-        ) -> Query<'q, DB, <DB as HasArguments<'q>>::Arguments>,
-        for<'n> <DB as HasArguments<'n>>::Arguments: Arguments<'n> + IntoArguments<'n, DB>,
-        E: Executor<'c, Database = DB>,
-    {
-        if self.empty_change() {
-            return Ok(<DB as Database>::QueryResult::default());
-        }
-        let table = T::table_name();
-        let values = self.sql_sets();
-        let sql = format!(
-            "UPDATE {} SET {} WHERE {}",
-            table.full_name(),
-            values,
-            where_sql
-        );
-        let mut res = sqlx::query(sql.as_str());
-        res = self.bind_values(res);
-        res = where_bind(res, self);
         executor.execute(res).await
     }
     pub async fn execute_by_where<'c, E>(
@@ -187,11 +158,11 @@ where
         let table = T::table_name();
         let pkf = T::table_pk();
         let mut where_sql = vec![];
+        let values = self.sql_sets();
         for (pos, val) in pkf.0.iter().enumerate() {
-            let bst = DbType::type_new::<DB>().mark(pos);
+            let bst = DbType::type_new::<DB>().mark(pos + self.change.diff_columns().len());
             where_sql.push(format!("{}={}", val.name, bst));
         }
-        let values = self.sql_sets();
         let sql = format!(
             "UPDATE {} SET {} WHERE {}",
             table.full_name(),
