@@ -13,15 +13,8 @@
   </a>
 </div>
 
-0.1.*版本升级0.2.* 升级提醒
-```
-1. 部分函数的String类型改为传入&str,为了提示效率 [调用方需加个&]
-2. 为了支持当不存在where条件且需要排序等操作,更换了WHERE入参的类型,涉及以下函数:
-   [Select]fetch_all_by_where [Update] execute_by_where [Delete] execute_by_where
-   由 Option 改为了 WhereOption [调用方需修改调用],如下例:
-   select.fetch_one_by_where::<UserModel>(Some(format!("id=1")), &db).await.unwrap();
-   修改为:select.fetch_one_by_where::<UserModel>(WhereOption::Where(format!("id=1")), &db).await.unwrap();
-```
+
+> 注意:当前仅供学习或测试使用,后面版本会有比较大变动.
 
 ##### 引入
 
