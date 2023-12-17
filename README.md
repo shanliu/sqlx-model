@@ -22,7 +22,7 @@
 
 ```toml
 [dependencies]
-sqlx-model = { version = "~0.2.0", path = "../../",default-features = false,features = ["sqlx-mysql"] }
+sqlx-model = { version = "~0.2.1", path = "../../",default-features = false,features = ["sqlx-mysql"] }
 sqlx = {version = "~0.6",features = [ "mysql","offline","runtime-async-std-native-tls"] }
 async-std={version = "1.10.0", features = [ "attributes" ]}
 ```
