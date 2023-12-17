@@ -3,7 +3,7 @@ members = [".", "sqlx-model-macros", "sqlx-model-tools"]
 
 [package]
 name = "sqlx-model"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["liushan <shan.liu@msn.com>"]
 edition = "2021"
 license-file = "LICENSE"
@@ -12,7 +12,7 @@ keywords = ["database", "async", "orm", "model", "sqlformat"]
 categories = ["database", "asynchronous"]
 repository = "https://github.com/shanliu/sqlx-model"
 [dependencies]
-sqlx-model-macros = { version = "0.0.3", path = "./sqlx-model-macros" }
+sqlx-model-macros = { version = "0.0.4", path = "./sqlx-model-macros" }
 sqlx = { version = "~0.6" }
 tokio = { version = "1.*", features = ["full"], optional = true }
 

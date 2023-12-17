@@ -211,7 +211,6 @@ pub fn sqlx_model(args: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 let implemented_show = quote! {
                     #input
-                    use sqlx::#db_type;
                     sqlx_model::model_table_value_bind_define!(sqlx::#db_type,#struct_name,#table_name,{#(#bind_fields),*},{#(#pk_fields),*});
                     sqlx_model::model_table_ref_define!(sqlx::#db_type,#struct_name,#change_struct,{#(#change_fields),*});
                 };
