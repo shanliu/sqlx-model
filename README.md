@@ -40,10 +40,8 @@ async-std={version = "1.10.0", features = [ "attributes" ]}
 
 
 ```rust
-#[derive(sqlx::FromRow,sqlx_model::SqlxModel,Clone,Debug)]
-//#[sqlx(rename_all="lowercase")] //按规则自定义字段名
-#[sqlx_model(table_pk="id")]//自定义表主键，不指定默认第一个字段
-#[sqlx_model(table_name="users")]//自定义关联表名，不指定为去除Model后的user
+#[derive(sqlx::FromRow,Clone,Debug)]
+#[sqlx_model(db_type="MySql",table_pk="id",table_name="users")]
 pub struct UserModel {
     #[sqlx(default)]
     pub id: u32,
